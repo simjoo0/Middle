@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:gravity="center_horizontal|center_vertical"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:background="#f7941e"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"
+        android:text="인원 수를 입력하세요"/>
+
+    <LinearLayout
+        android:layout_marginTop="30dp"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="50dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/info_enter_image1"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:gravity="center_horizontal|center_vertical"
+            android:textSize="20sp"
+            android:layout_weight="1"
+            android:text="만나는 사람은 "/>
+
+        <Spinner
+            android:layout_width="40dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:layout_gravity="center_horizontal"
+            android:entries="@array/count_people_arr"></Spinner>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:gravity="center_horizontal|center_vertical"
+            android:layout_weight="1"
+            android:textSize="20sp"
+            android:text="명 입니다"/>
+    </LinearLayout>
+
+    <TextView
+        android:layout_marginTop="40dp"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:textColor="#f7941e"
+        android:text="- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"/>
+
+    <TextView
+        android:layout_marginTop="60dp"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:background="#f7941e"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"
+        android:text="만남의 목적을 선택하세요"/>
+    <LinearLayout
+        android:layout_marginTop="30dp"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
+        <CheckBox
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#f7941e"
+            android:text="식사"/>
+        <CheckBox
+            android:layout_width="90dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#f7941e"
+            android:text="카페"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_marginTop="20dp"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
+        <CheckBox
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#f7941e"
+            android:text="스터디"/>
+        <CheckBox
+            android:layout_width="90dp"
+            android:layout_height="wrap_content"
+            android:buttonTint="#f7941e"
+            android:text="문화"/>
+    </LinearLayout>
+
+</LinearLayout>
