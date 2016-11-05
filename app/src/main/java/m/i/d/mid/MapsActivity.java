@@ -49,7 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String searchResultStr="";  //xml 결과를 '/'로 연결한 문자열 '이름/주소/위도/경도' 로 구성된다.
     String markingResultName="";    //리스트뷰 아이템 선택 시 가져오는 이름을 저장할 문자열
     String markingResultLat="";     //리스트뷰 아이템 선택 시 가져오는 위도를 저장할 문자열
-    String markingResultLng="";     //리스트뷰 아이템 선택 시 가져오는 경도를 저장할 문자열 ㅠㅠ
+    String markingResultLng="";     //리스트뷰 아이템 선택 시 가져오는 경도를 저장할 문자열
 
     int markerCount=0;
 
@@ -61,7 +61,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        // 왜안될까여..
 
 
         searchLinear = (LinearLayout) findViewById(R.id.SearchLinear);
