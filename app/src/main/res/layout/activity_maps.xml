@@ -1,0 +1,75 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/locationPlusBtn"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/locationplusbtnimg"
+        android:textSize="30sp"
+        android:onClick="onLocationPlus" />
+
+    <LinearLayout
+        android:id="@+id/SearchAllLinear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <LinearLayout
+            android:id="@+id/SearchLinear"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:gravity="center_vertical"
+            android:background="#E0E0E0"
+            android:layout_width="match_parent"
+            android:layout_height="40dp">
+
+            <EditText
+                android:id="@+id/addressEt"
+                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_weight="4"
+                android:hint="주소를 입력하세요"
+                android:background="@null"/>
+
+            <Button
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/searchbtnimg"
+                android:id="@+id/Bsearch"
+                android:layout_gravity="right"
+                android:onClick="onSearch" />
+        </LinearLayout>
+        <ListView
+            android:id="@+id/searchResultLv"
+            android:background="#E0E0E0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:visibility="invisible"
+            ></ListView>
+    </LinearLayout>
+
+
+
+
+    <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context="i.v.you.middle.MapsActivity" />
+
+</RelativeLayout>
+
