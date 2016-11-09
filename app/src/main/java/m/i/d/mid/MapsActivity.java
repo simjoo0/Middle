@@ -3,6 +3,7 @@ package m.i.d.mid;
 import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Message;
@@ -16,6 +17,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -52,6 +54,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String markingResultLng="";     //리스트뷰 아이템 선택 시 가져오는 경도를 저장할 문자열
 
     int markerCount=0;
+    String meetingPurposeStr="";
+    int peopleCount=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +66,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        Intent intent=new Intent(this.getIntent());
+        meetingPurposeStr=intent.getStringExtra("meetingPurPose").toString();
+        peopleCount=intent.getIntExtra("peopleCount",0);
+
+        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();
+
+
 
         searchLinear = (LinearLayout) findViewById(R.id.SearchLinear);
         SearchAllLinear=(LinearLayout) findViewById(R.id.SearchAllLinear);
@@ -69,7 +80,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         locationPlusBtn.bringToFront();
 
         addressEt = (EditText) findViewById(R.id.addressEt);
-
 
     }
 
@@ -159,7 +169,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 markerCount++;
 
                                 SearchAllLinear.setVisibility(View.GONE);
-                                locationPlusBtn.setVisibility(View.VISIBLE);
+
+                                if(peopleCount==markerCount){
+                                    locationPlusBtn.setVisibility(View.GONE);
+                                }else{
+                                    locationPlusBtn.setVisibility(View.VISIBLE);
+                                }
                             }
                         });
                     }
@@ -289,6 +304,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 mMap.animateCamera(CameraUpdateFactory.newLatLng(longTouchLatLng));
 
                                 markerCount++;
+
+                                if(peopleCount==markerCount){
+                                    locationPlusBtn.setVisibility(View.GONE);
+                                }
                             }
                         }).setNegativeButton("취소",
                         new DialogInterface.OnClickListener() {
@@ -300,6 +319,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         });
                 AlertDialog alert = alert_confirm.create();
                 alert.show();
+
             }
         });
 

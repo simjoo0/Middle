@@ -10,7 +10,7 @@
         android:layout_width="300dp"
         android:layout_height="300dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/logo5_1"/>
+        android:src="@drawable/logo"/>
     <TextView
         android:layout_width="300dp"
         android:layout_height="wrap_content"

@@ -1,106 +1,186 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:gravity="center_horizontal|center_vertical"
     android:background="#FFFFFF">
 
-    <TextView
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:background="#f7941e"
-        android:textSize="20sp"
-        android:textColor="#FFFFFF"
-        android:text="인원 수를 입력하세요"/>
-
     <LinearLayout
-        android:layout_marginTop="30dp"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_horizontal">
-
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="50dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/info_enter_image1"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="50dp"
-            android:gravity="center_horizontal|center_vertical"
-            android:textSize="20sp"
-            android:layout_weight="1"
-            android:text="만나는 사람은 "/>
-
-        <Spinner
-            android:layout_width="40dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:layout_gravity="center_horizontal"
-            android:entries="@array/count_people_arr"></Spinner>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal|center_vertical"
+        android:orientation="vertical">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="50dp"
-            android:gravity="center_horizontal|center_vertical"
-            android:layout_weight="1"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:background="#f7941e"
             android:textSize="20sp"
-            android:text="명 입니다"/>
+            android:textColor="#FFFFFF"
+            android:text="인원 수를 입력하세요"/>
+
+        <LinearLayout
+            android:layout_marginTop="30dp"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_horizontal">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="50dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/info_enter_image1"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:gravity="center_horizontal|center_vertical"
+                android:textSize="20sp"
+                android:layout_weight="1"
+                android:text="만나는 사람은 "/>
+
+            <Spinner
+                android:id="@+id/spinner1"
+                android:layout_width="40dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_gravity="center_horizontal"
+                android:entries="@array/count_people_arr"></Spinner>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:gravity="center_horizontal|center_vertical"
+                android:layout_weight="1"
+                android:textSize="20sp"
+                android:text="명 입니다"/>
+        </LinearLayout>
+        <TextView
+            android:layout_marginTop="40dp"
+            android:layout_width="300dp"
+            android:layout_height="10dp"
+            android:textColor="#f7941e"
+            android:text="- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"/>
+
+        <TextView
+            android:layout_marginTop="70dp"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:background="#f7941e"
+            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:text="만남의 목적을 선택하세요"/>
+
+        <RadioGroup
+            android:id="@+id/radioGroup"
+            android:layout_marginTop="30dp"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+
+            <RadioButton
+                android:id="@+id/mealRadio"
+                android:buttonTint="#f7941e"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="식사"/>
+            <RadioButton
+                android:id="@+id/caffeRadio"
+                android:buttonTint="#f7941e"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="카페"/>
+
+            <RadioButton
+                android:id="@+id/studyRadio"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="#f7941e"
+                android:text="스터디"/>
+            <RadioButton
+                android:id="@+id/cultureRadio"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="#f7941e"
+                android:text="문화"/>
+
+        </RadioGroup>
+
     </LinearLayout>
 
-    <TextView
-        android:layout_marginTop="40dp"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:textColor="#f7941e"
-        android:text="- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"/>
+    <Button
+        android:id="@+id/mapEnterBtn"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/map_enter_btn"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"/>
 
-    <TextView
-        android:layout_marginTop="60dp"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:background="#f7941e"
-        android:textSize="20sp"
-        android:textColor="#FFFFFF"
-        android:text="만남의 목적을 선택하세요"/>
-    <LinearLayout
-        android:layout_marginTop="30dp"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="horizontal">
-        <CheckBox
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:buttonTint="#f7941e"
-            android:text="식사"/>
-        <CheckBox
-            android:layout_width="90dp"
-            android:layout_height="wrap_content"
-            android:buttonTint="#f7941e"
-            android:text="카페"/>
-    </LinearLayout>
-    <LinearLayout
-        android:layout_marginTop="20dp"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="horizontal">
-        <CheckBox
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:buttonTint="#f7941e"
-            android:text="스터디"/>
-        <CheckBox
-            android:layout_width="90dp"
-            android:layout_height="wrap_content"
-            android:buttonTint="#f7941e"
-            android:text="문화"/>
-    </LinearLayout>
+    <Button
+        android:id="@+id/questionBtn"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@drawable/question_btn"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="20dp"/>
 
-</LinearLayout>
+        <LinearLayout
+            android:id="@+id/questionLinear"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="30dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:background="#E0E0E0"
+            android:visibility="invisible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+                <Button
+                    android:id="@+id/closeBtn"
+                    android:layout_margin="10dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@drawable/close_btn"
+                    android:gravity="right"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"
+                android:text="1. 인원 수와 목적을 선택해 주세요."/>
+            <TextView
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"
+                android:text="2. 인원만큼 주소를 입력해 주세요."/>
+            <TextView
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"
+                android:text="3. 입력이 완료되면 목적에 맞는 중간 위치가 지도에 표시됩니다."/>
+            <TextView
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"
+                android:text="4. 마커를 클릭하면 주변정보를 알 수 있습니다."/>
+        </LinearLayout>
+
+
+</RelativeLayout>
