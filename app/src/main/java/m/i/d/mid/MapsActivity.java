@@ -5,13 +5,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -23,9 +26,12 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.tsengvn.typekit.TypekitContextWrapper;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -47,6 +53,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     EditText addressEt;
 
     ArrayList<ListViewItem> data;   //리스트뷰 아이템 담는 arrayList
+    ArrayList<Double> resultList=new ArrayList<Double>(); // 중간좌표
+
+    ArrayList<PurposeNearListItem> purposeNearListItems = new ArrayList<PurposeNearListItem>();
 
     String searchResultStr="";  //xml 결과를 '/'로 연결한 문자열 '이름/주소/위도/경도' 로 구성된다.
     String markingResultName="";    //리스트뷰 아이템 선택 시 가져오는 이름을 저장할 문자열
@@ -54,8 +63,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String markingResultLng="";     //리스트뷰 아이템 선택 시 가져오는 경도를 저장할 문자열
 
     int markerCount=0;
-    String meetingPurposeStr="";
-    int peopleCount=0;
+    String meetingPurposeStr="";    //목적
+    int peopleCount=0;  //인원수
+
+    String middleNearStr="";
+
+    ArrayList<Double> tempX=new ArrayList<Double>();
+    ArrayList<Double> tempY=new ArrayList<Double>();
+
+    Marker marker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +86,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         meetingPurposeStr=intent.getStringExtra("meetingPurPose").toString();
         peopleCount=intent.getIntExtra("peopleCount",0);
 
-        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();
+//        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();    //이전 액티비티에서 목적과 인원수 가져오는지 확인
 
 
 
@@ -80,6 +96,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         locationPlusBtn.bringToFront();
 
         addressEt = (EditText) findViewById(R.id.addressEt);
+
 
     }
 
@@ -118,7 +135,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         final String uriLocationStr=uriLocation;
 
-        new Thread() {  //Google Place Web Server에 Uri 연결하기 위해 Thread 실행 (UI Thread에서 실행 불가하기 때문)
+        final Thread thread=new Thread() {  //Google Place Web Server에 Uri 연결하기 위해 Thread 실행 (UI Thread에서 실행 불가하기 때문)
             public void run() {
 
                 String line = getPlaceInfo(uriLocationStr);
@@ -149,6 +166,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {     // 검색된 결과 리스트에서 리스트아이템 선택 시 해당 리스트 결과로 마커 찍음
                             @Override
                             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                markerCount++;
+
+                                InputMethodManager imm= (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                                imm.hideSoftInputFromWindow(addressEt.getWindowToken(),0);
+
+
 
                                 String str=(String) adapter.getItem(position).toString();
                                 StringTokenizer markingStnz=new StringTokenizer(str,",");
@@ -160,27 +183,126 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 }
 
                                 LatLng latLng = new LatLng(Double.parseDouble(markingResultLat),Double.parseDouble(markingResultLng));  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                mMap.addMarker(new MarkerOptions().position(latLng).title(markingResultName));
+                                mMap.addMarker(new MarkerOptions().position(latLng).title("친구위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.people_marker));
                                 mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+
+                                tempX.add(Double.parseDouble(markingResultLat));
+                                tempY.add(Double.parseDouble(markingResultLng));
 
                                 data.clear();
                                 adapter.notifyDataSetChanged();
-
-                                markerCount++;
 
                                 SearchAllLinear.setVisibility(View.GONE);
 
                                 if(peopleCount==markerCount){
                                     locationPlusBtn.setVisibility(View.GONE);
+
+                                    double[] x=new double[peopleCount];
+                                    double[] y=new double[peopleCount];
+
+                                    for(int i=0;i<peopleCount;i++){
+                                        x[i]=tempX.get(i);
+                                        y[i]=tempY.get(i);
+                                    }
+
+                                    GetPosition getPosition=new GetPosition(peopleCount);
+                                    resultList=getPosition.mainFunc(x,y);
+
+//                                    Toast.makeText(getApplicationContext(),"결과 값 넘어옴 "+resultList.get(0)+","+resultList.get(1),Toast.LENGTH_LONG).show();
+
+                                    LatLng final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                    mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
+                                    mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
+
+
+                                    MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
+
+//                                    Toast.makeText(getApplicationContext(),middleNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
+                                    middleNearStr=middleNearSearch.getMiddleAddress().toString();
+//                                    Toast.makeText(getApplicationContext(),middleNearStr,Toast.LENGTH_SHORT).show();
+                                    String dong="";
+
+                                    String[] tempAddress=middleNearStr.split(" ");
+
+                                    for(int i=0;i<tempAddress.length;i++){
+                                        if(tempAddress[i].contains("동")||tempAddress[i].contains("리")||tempAddress[i].contains("읍")||tempAddress[i].contains("면")){
+                                            dong=tempAddress[i];
+                                        }
+                                    }
+//                                    Toast.makeText(getApplicationContext(),dong,Toast.LENGTH_SHORT).show();
+                                    PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
+//                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
+                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
+
+                                    StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
+
+                                    while(stk1.hasMoreTokens()){
+                                        StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
+                                        while(stk2.hasMoreTokens()){
+                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
+                                        }
+                                    }
+//                                    PurposeNearListAdapter purposeNearListAdapter =new PurposeNearListAdapter(purposeNearListItems,getLayoutInflater());
+//                                    purposeListView.setAdapter(purposeNearListAdapter);
+//                                    purposeListView.setVisibility(View.VISIBLE);
+//                                    purposeListView.bringToFront();
+
+                                    if(purposeNearListItems.size()!=0){
+                                        ArrayList<Integer> distIndex=GetNearPosition.calculMinDist(purposeNearListItems,resultList.get(0),resultList.get(1));
+                                        Toast.makeText(getApplicationContext(), purposeNearListItems.get(distIndex.get(0)).getName() + "이(가) 가장 가깝습니다.", Toast.LENGTH_SHORT).show();
+
+                                        LatLng near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                        mMap.addMarker(new MarkerOptions().position(near_position).title("최종위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+                                        mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
+
+                                        double difLat = final_position.latitude - near_position.latitude;
+                                        double difLng = final_position.longitude - near_position.longitude;
+
+                                        double zoom = mMap.getCameraPosition().zoom;
+
+                                        double divLat = difLat / (zoom * 2);
+                                        double divLng = difLng / (zoom * 2);
+
+                                        LatLng tmpLatOri = near_position;
+
+                                        for(int i = 0; i < (zoom * 2); i++){
+                                            LatLng loopLatLng = tmpLatOri;
+
+                                            if(i > 0){
+                                                loopLatLng = new LatLng(tmpLatOri.latitude + (divLat * 0.5f), tmpLatOri.longitude + (divLng * 0.5f));
+                                            }
+
+                                            Polyline polyline = mMap.addPolyline(new PolylineOptions()
+                                                    .add(loopLatLng)
+                                                    .add(new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng))
+                                                    .color(Color.parseColor("#8bd9f2"))
+                                                    .width(5f));
+
+                                            tmpLatOri = new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng);
+                                        }
+
+                                    }else{
+                                        Toast.makeText(getApplicationContext(), "중간 위치에서 가장 가까운 곳이 없습니다.", Toast.LENGTH_SHORT).show();
+                                    }
+
+
+
                                 }else{
                                     locationPlusBtn.setVisibility(View.VISIBLE);
                                 }
+
                             }
+
                         });
                     }
                 });
+
+
             }
-        }.start();
+        };
+        thread.start();
+
+
 
     }
 
@@ -188,7 +310,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         StringBuffer buffer=new StringBuffer();
         String encodingLocation = URLEncoder.encode(location); //한글의 경우 인식이 안되기에 utf-8 방식으로 encoding..
-        String queryUrl="https://maps.googleapis.com/maps/api/place/textsearch/xml?query="+location+"&key=AIzaSyA6nMZZt07EhgeQgoWYCq0tc0NrOGfdtJM";
+        String queryUrl="https://maps.googleapis.com/maps/api/place/textsearch/xml?query="+location+"&language=ko&key=AIzaSyA6nMZZt07EhgeQgoWYCq0tc0NrOGfdtJM";
 
         try {
             URL url= new URL(queryUrl); //문자열로 된 요청 url을 URL 객체로 생성.
@@ -300,13 +422,111 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             public void onClick(DialogInterface dialog, int which) {
                                 // 'YES'
                                 LatLng longTouchLatLng = new LatLng(latLng.latitude,latLng.longitude);  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                mMap.addMarker(new MarkerOptions().position(longTouchLatLng).title("추가"));
+                                mMap.addMarker(new MarkerOptions().position(longTouchLatLng).title("친구위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.people_marker));
                                 mMap.animateCamera(CameraUpdateFactory.newLatLng(longTouchLatLng));
+
+                                tempX.add(latLng.latitude);
+                                tempY.add(latLng.longitude);
 
                                 markerCount++;
 
                                 if(peopleCount==markerCount){
                                     locationPlusBtn.setVisibility(View.GONE);
+
+                                    double[] x=new double[peopleCount];
+                                    double[] y=new double[peopleCount];
+
+                                    for(int i=0;i<peopleCount;i++){
+                                        x[i]=tempX.get(i);
+                                        y[i]=tempY.get(i);
+                                    }
+
+                                    GetPosition getPosition=new GetPosition(peopleCount);
+                                    resultList=getPosition.mainFunc(x,y);
+
+//                                    Toast.makeText(getApplicationContext(),"결과 값 넘어옴 "+resultList.get(0)+","+resultList.get(1),Toast.LENGTH_LONG).show();
+
+                                    LatLng final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                    mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
+                                    mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
+                                    Log.i("resultList",resultList.get(0)+","+resultList.get(1));
+                                    MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
+
+//                                    Toast.makeText(getApplicationContext(),middleNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
+                                    middleNearStr=middleNearSearch.getMiddleAddress().toString();
+                                    Log.i("middleNearStr",middleNearStr);
+//                                    Toast.makeText(getApplicationContext(),middleNearStr,Toast.LENGTH_SHORT).show();
+                                    String dong="";
+
+                                    String[] tempAddress=middleNearStr.split(" ");
+
+                                    for(int i=0;i<tempAddress.length;i++){
+                                        if(tempAddress[i].contains("동")||tempAddress[i].contains("리")||tempAddress[i].contains("읍")||tempAddress[i].contains("면")){
+                                            dong=tempAddress[i];
+                                        }
+                                    }
+                                    Log.i("dong",dong);
+
+//                                    Toast.makeText(getApplicationContext(),dong,Toast.LENGTH_SHORT).show();
+                                    PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
+//                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
+                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
+                                    Log.i("purposeNearSearch",purposeNearSearch.getMiddleAddress().toString());
+
+                                    StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
+
+                                    while(stk1.hasMoreTokens()){
+                                        StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
+                                        while(stk2.hasMoreTokens()){
+                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
+                                        }
+                                    }
+//                                    PurposeNearListAdapter purposeNearListAdapter =new PurposeNearListAdapter(purposeNearListItems,getLayoutInflater());
+//                                    purposeListView.setAdapter(purposeNearListAdapter);
+//                                    purposeListView.setVisibility(View.VISIBLE);
+//                                    purposeListView.bringToFront();
+
+                                    if(purposeNearListItems.size()!=0){
+                                        ArrayList<Integer> distIndex=GetNearPosition.calculMinDist(purposeNearListItems,resultList.get(0),resultList.get(1));
+                                        Toast.makeText(getApplicationContext(), purposeNearListItems.get(distIndex.get(0)).getName() + "이(가) 가장 가깝습니다.", Toast.LENGTH_SHORT).show();
+
+                                        LatLng near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                        mMap.addMarker(new MarkerOptions().position(near_position).title("최종위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+                                        mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
+
+                                        double difLat = final_position.latitude - near_position.latitude;
+                                        double difLng = final_position.longitude - near_position.longitude;
+
+                                        double zoom = mMap.getCameraPosition().zoom;
+
+                                        double divLat = difLat / (zoom * 2);
+                                        double divLng = difLng / (zoom * 2);
+
+                                        LatLng tmpLatOri = near_position;
+
+                                        for(int i = 0; i < (zoom * 2); i++){
+                                            LatLng loopLatLng = tmpLatOri;
+
+                                            if(i > 0){
+                                                loopLatLng = new LatLng(tmpLatOri.latitude + (divLat * 0.5f), tmpLatOri.longitude + (divLng * 0.5f));
+                                            }
+
+                                            Polyline polyline = mMap.addPolyline(new PolylineOptions()
+                                                    .add(loopLatLng)
+                                                    .add(new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng))
+                                                    .color(Color.parseColor("#8bd9f2"))
+                                                    .width(5f));
+
+                                            tmpLatOri = new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng);
+                                        }
+
+                                    }else{
+                                        Toast.makeText(getApplicationContext(), "중간 위치에서 가장 가까운 곳이 없습니다.", Toast.LENGTH_SHORT).show();
+                                    }
+
+
+
+
                                 }
                             }
                         }).setNegativeButton("취소",
@@ -323,15 +543,58 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
-            public boolean onMarkerClick(Marker marker) {
-//                Toast.makeText(MapsActivity.this,marker.getTitle(),Toast.LENGTH_SHORT).show();
-                Button closeBtn=new Button(MapsActivity.this);
-                closeBtn.setText("X");
+            public boolean onMarkerClick(Marker clickedMarker) {
+                marker=clickedMarker;
+                if(peopleCount>markerCount){
+                    AlertDialog.Builder alert_confirm = new AlertDialog.Builder(MapsActivity.this);
+                    alert_confirm.setMessage("위치를 삭제할까요?").setCancelable(false).setPositiveButton("확인",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // 'YES'
+                                    markerCount--;
+                                    marker.remove();
+                                    for(int i=0;i<tempX.size();i++){
+                                        if((tempX.get(i)==marker.getPosition().latitude)&&(tempY.get(i)==marker.getPosition().longitude)){
+                                            tempX.remove(i);
+                                            tempY.remove(i);
+                                        }
+                                    }
 
+                                }
+                            }).setNegativeButton("취소",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // 'No'
+                                    return;
+                                }
+                            });
+                    AlertDialog alert = alert_confirm.create();
+                    alert.show();
+                }else{
+                    marker.setSnippet("추가 위치정보 들어갈 자리");
+                    marker.showInfoWindow();
+                }
                 return true;
             }
         });
+
+
+
+
+
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        resultList.clear();
+        tempX.clear();
+        tempY.clear();
     }
 }

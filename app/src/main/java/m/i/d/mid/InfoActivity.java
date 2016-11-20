@@ -104,7 +104,6 @@ public class InfoActivity extends Activity{
                     intent.putExtra("meetingPurPose",meetingPurposeStr);
                     startActivity(intent); // 로딩이 끝난후 이동할 Activity
 
-                    InfoActivity.this.finish();
                 }else{
                     if(peopleCount==0 && !meetingPurposeStr.equals("")){
                         Toast.makeText(InfoActivity.this, "인원 수를 선택하세요", Toast.LENGTH_SHORT).show();
