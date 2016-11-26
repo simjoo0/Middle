@@ -14,19 +14,24 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -44,34 +49,56 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+
+    private ViewGroup infoWindow;
+    private TextView finalAddressTv;
+    private Button nearInfoBtn;
+    private Button saveBtn;
+    private OnInfoWindowElemTouchListener infoButtonListener1;
+    private OnInfoWindowElemTouchListener infoButtonListener2;
+
+
+
     LinearLayout searchLinear;
     LinearLayout SearchAllLinear;
     Button locationPlusBtn;
     EditText addressEt;
 
+    LinearLayout purposeListLinear;
+    ListView purposeListView;
+
     ArrayList<ListViewItem> data;   //리스트뷰 아이템 담는 arrayList
     ArrayList<Double> resultList=new ArrayList<Double>(); // 중간좌표
 
     ArrayList<PurposeNearListItem> purposeNearListItems = new ArrayList<PurposeNearListItem>();
+    ArrayList<Double> tempX=new ArrayList<Double>();
+    ArrayList<Double> tempY=new ArrayList<Double>();
+
+    ArrayList<Circle> circleArrayList=new ArrayList<Circle>();
+
+    PurposeNearListAdapter purposeNearListAdapter;
 
     String searchResultStr="";  //xml 결과를 '/'로 연결한 문자열 '이름/주소/위도/경도' 로 구성된다.
     String markingResultName="";    //리스트뷰 아이템 선택 시 가져오는 이름을 저장할 문자열
     String markingResultLat="";     //리스트뷰 아이템 선택 시 가져오는 위도를 저장할 문자열
     String markingResultLng="";     //리스트뷰 아이템 선택 시 가져오는 경도를 저장할 문자열
 
+    String purpose_destination_name="";
+    String purpose_destination_address="";
+
     int markerCount=0;
     String meetingPurposeStr="";    //목적
     int peopleCount=0;  //인원수
 
     String middleNearStr="";
-
-    ArrayList<Double> tempX=new ArrayList<Double>();
-    ArrayList<Double> tempY=new ArrayList<Double>();
-
     Marker marker;
+    LatLng near_position;
+
+    Circle clicked_list_circle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,7 +115,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 //        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();    //이전 액티비티에서 목적과 인원수 가져오는지 확인
 
-
+        this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.custom_info_window_layout, null);
+        this.finalAddressTv = (TextView)infoWindow.findViewById(R.id.finalAddressTv);
+        this.nearInfoBtn = (Button)infoWindow.findViewById(R.id.nearInfoBtn);
+        this.saveBtn = (Button)infoWindow.findViewById(R.id.saveBtn);
 
         searchLinear = (LinearLayout) findViewById(R.id.SearchLinear);
         SearchAllLinear=(LinearLayout) findViewById(R.id.SearchAllLinear);
@@ -232,27 +262,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                                    Toast.makeText(getApplicationContext(),dong,Toast.LENGTH_SHORT).show();
                                     PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
 //                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
-                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
+//                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
 
                                     StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
 
                                     while(stk1.hasMoreTokens()){
                                         StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
                                         while(stk2.hasMoreTokens()){
-                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
+                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
                                         }
                                     }
-//                                    PurposeNearListAdapter purposeNearListAdapter =new PurposeNearListAdapter(purposeNearListItems,getLayoutInflater());
-//                                    purposeListView.setAdapter(purposeNearListAdapter);
-//                                    purposeListView.setVisibility(View.VISIBLE);
-//                                    purposeListView.bringToFront();
 
                                     if(purposeNearListItems.size()!=0){
                                         ArrayList<Integer> distIndex=GetNearPosition.calculMinDist(purposeNearListItems,resultList.get(0),resultList.get(1));
                                         Toast.makeText(getApplicationContext(), purposeNearListItems.get(distIndex.get(0)).getName() + "이(가) 가장 가깝습니다.", Toast.LENGTH_SHORT).show();
 
-                                        LatLng near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                        mMap.addMarker(new MarkerOptions().position(near_position).title("최종위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+                                        purpose_destination_name=purposeNearListItems.get(distIndex.get(0)).getName().toString();
+                                        purpose_destination_address=purposeNearListItems.get(distIndex.get(0)).getAddress().toString();
+
+                                        near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                        mMap.addMarker(new MarkerOptions().position(near_position).title(purpose_destination_name)).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
                                         mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
 
                                         double difLat = final_position.latitude - near_position.latitude;
@@ -447,15 +476,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                                    Toast.makeText(getApplicationContext(),"결과 값 넘어옴 "+resultList.get(0)+","+resultList.get(1),Toast.LENGTH_LONG).show();
 
                                     LatLng final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                    mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
-                                    mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
-                                    Log.i("resultList",resultList.get(0)+","+resultList.get(1));
+//                                    Log.i("resultList",resultList.get(0)+","+resultList.get(1));
                                     MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
 
 //                                    Toast.makeText(getApplicationContext(),middleNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
                                     middleNearStr=middleNearSearch.getMiddleAddress().toString();
                                     Log.i("middleNearStr",middleNearStr);
 //                                    Toast.makeText(getApplicationContext(),middleNearStr,Toast.LENGTH_SHORT).show();
+
+                                    mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
+                                    mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
+
                                     String dong="";
 
                                     String[] tempAddress=middleNearStr.split(" ");
@@ -470,7 +501,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                                    Toast.makeText(getApplicationContext(),dong,Toast.LENGTH_SHORT).show();
                                     PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
 //                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
-                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
+//                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
                                     Log.i("purposeNearSearch",purposeNearSearch.getMiddleAddress().toString());
 
                                     StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
@@ -478,20 +509,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     while(stk1.hasMoreTokens()){
                                         StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
                                         while(stk2.hasMoreTokens()){
-                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
+                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
                                         }
                                     }
-//                                    PurposeNearListAdapter purposeNearListAdapter =new PurposeNearListAdapter(purposeNearListItems,getLayoutInflater());
-//                                    purposeListView.setAdapter(purposeNearListAdapter);
-//                                    purposeListView.setVisibility(View.VISIBLE);
-//                                    purposeListView.bringToFront();
 
                                     if(purposeNearListItems.size()!=0){
                                         ArrayList<Integer> distIndex=GetNearPosition.calculMinDist(purposeNearListItems,resultList.get(0),resultList.get(1));
                                         Toast.makeText(getApplicationContext(), purposeNearListItems.get(distIndex.get(0)).getName() + "이(가) 가장 가깝습니다.", Toast.LENGTH_SHORT).show();
 
-                                        LatLng near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                        mMap.addMarker(new MarkerOptions().position(near_position).title("최종위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+                                        purpose_destination_name=purposeNearListItems.get(distIndex.get(0)).getName().toString();
+                                        purpose_destination_address=purposeNearListItems.get(distIndex.get(0)).getAddress().toString();
+
+                                        near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                        mMap.addMarker(new MarkerOptions().position(near_position).title(purpose_destination_name)).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
                                         mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
 
                                         double difLat = final_position.latitude - near_position.latitude;
@@ -576,18 +606,135 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     AlertDialog alert = alert_confirm.create();
                     alert.show();
                 }else{
-                    marker.setSnippet("추가 위치정보 들어갈 자리");
+                    mMap.animateCamera(CameraUpdateFactory.newLatLng(clickedMarker.getPosition()));
+                    if(marker.getPosition().latitude==near_position.latitude && marker.getPosition().longitude==near_position.longitude){
+//                        marker.setSnippet(purpose_destination_address);
+
+
+                        // Setting custom OnTouchListener which deals with the pressed state
+                        // so it shows up
+                        final MapWrapperLayout mapWrapperLayout = (MapWrapperLayout)findViewById(R.id.map_relative_layout);
+                        mapWrapperLayout.init(mMap, getPixelsFromDp(getApplicationContext(), 39 + 20));
+                        infoButtonListener1 = new OnInfoWindowElemTouchListener(nearInfoBtn){
+                            @Override
+                            protected void onClickConfirmed(View v, Marker marker) {
+                                // Here we can perform some action triggered after clicking the button
+                                Toast.makeText(MapsActivity.this, "주변정보버튼 클릭", Toast.LENGTH_SHORT).show();
+                                marker.hideInfoWindow();
+
+                                purposeNearListAdapter =new PurposeNearListAdapter(purposeNearListItems,getLayoutInflater());
+                                for(int i=0;i<purposeNearListItems.size();i++){
+                                    CircleOptions circleOptions = new CircleOptions()
+                                            .center(new LatLng(purposeNearListItems.get(i).getLat(),purposeNearListItems.get(i).getLng()))
+                                            .radius(40)
+                                            .strokeColor(Color.parseColor("#6d6e71"))
+                                            .fillColor(Color.parseColor("#6d6e71"));
+                                    Circle circle = mMap.addCircle(circleOptions);
+                                    circleArrayList.add(circle);
+                                    if(i==purposeNearListItems.size()-1){
+                                        clicked_list_circle=mMap.addCircle(circleOptions);
+                                    }
+                                }
+
+                                purposeListView=(ListView) findViewById(R.id.purposeListView);
+                                purposeListLinear=(LinearLayout) findViewById(R.id.purposeListLinear);
+
+                                Button purposeListCloseBtn=(Button) findViewById(R.id.purposeListCloseBtn);
+
+                                purposeListView.setAdapter(purposeNearListAdapter);
+                                purposeListLinear.setVisibility(View.VISIBLE);
+                                purposeListLinear.bringToFront();
+                                purposeListView.bringToFront();
+
+                                purposeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                    @Override
+                                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                        for(int i=0;i<purposeNearListItems.size();i++){
+                                            if((purposeNearListItems.get(position).getName()).equals(purposeNearListItems.get(i).getName())){
+                                                    clicked_list_circle.setCenter(new LatLng(purposeNearListItems.get(i).getLat(), purposeNearListItems.get(i).getLng()));
+                                                    clicked_list_circle.setStrokeColor(Color.parseColor("#8dd6f0"));
+                                                    clicked_list_circle.setFillColor(Color.parseColor("#8dd6f0"));
+                                            }
+                                        }
+
+                                    }
+                                });
+
+                                purposeListCloseBtn.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        AlertDialog.Builder alert_confirm = new AlertDialog.Builder(MapsActivity.this);
+                                        alert_confirm.setMessage("주변정보가 사라집니다. 닫겠습니까?").setCancelable(false).setPositiveButton("확인",
+                                                new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        // 'YES'
+                                                        clicked_list_circle.remove();
+                                                        for(Circle circle : circleArrayList){
+                                                            circle.remove();
+                                                        }
+                                                        circleArrayList.clear();
+                                                        purposeListLinear.setVisibility(View.GONE);
+
+                                                    }
+                                                }).setNegativeButton("취소",
+                                                new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        // 'No'
+                                                        return;
+                                                    }
+                                                });
+                                        AlertDialog alert = alert_confirm.create();
+                                        alert.show();
+                                    }
+                                });
+                            }
+                        };
+                        infoButtonListener2 = new OnInfoWindowElemTouchListener(saveBtn){
+                            @Override
+                            protected void onClickConfirmed(View v, Marker marker) {
+                                // Here we can perform some action triggered after clicking the button
+                                Toast.makeText(MapsActivity.this, "저장버튼 클릭", Toast.LENGTH_SHORT).show();
+                                marker.hideInfoWindow();
+                            }
+                        };
+                        nearInfoBtn.setOnTouchListener(infoButtonListener1);
+                        saveBtn.setOnTouchListener(infoButtonListener2);
+
+
+                        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+                            @Override
+                            public View getInfoWindow(Marker marker) {
+                                return null;
+                            }
+
+                            @Override
+                            public View getInfoContents(Marker marker) {
+                                // Setting up the infoWindow with current's marker info
+                                // We must call this to set the current marker and infoWindow references
+                                // to the MapWrapperLayout
+                                if(marker.getPosition().latitude==near_position.latitude && marker.getPosition().longitude==near_position.longitude){
+                                    finalAddressTv.setText(purpose_destination_address);
+                                    infoButtonListener1.setMarker(marker);
+                                    infoButtonListener2.setMarker(marker);
+                                    mapWrapperLayout.setMarkerWithInfoWindow(marker, infoWindow);
+                                    return infoWindow;
+                                }else{
+                                    return null;
+                                }
+                            }
+                        });
+
+
+                    }else{
+                        marker.setSnippet("추가 위치정보 들어갈 자리");
+                    }
                     marker.showInfoWindow();
                 }
                 return true;
             }
         });
-
-
-
-
-
-
     }
 
     @Override
@@ -596,5 +743,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         resultList.clear();
         tempX.clear();
         tempY.clear();
+    }
+
+    public static int getPixelsFromDp(Context context, float dp) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int)(dp * scale + 0.5f);
     }
 }

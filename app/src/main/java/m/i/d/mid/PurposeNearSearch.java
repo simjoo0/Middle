@@ -85,6 +85,10 @@ public class PurposeNearSearch {
                             xpp.next();
                             buffer.append(xpp.getText()); //name 요소의 TEXT 읽어와서 문자열버퍼에 추가
                             buffer.append("/");
+                        }else if(tag.equals("formatted_address")){
+                            xpp.next();
+                            buffer.append(xpp.getText()); //formatted_address 요소의 TEXT 읽어와서 문자열버퍼에 추가
+                            buffer.append("/");
                         }else if(tag.equals("lat")){
                             xpp.next();
                             buffer.append(xpp.getText()); //lat 요소의 TEXT 읽어와서 문자열버퍼에 추가
