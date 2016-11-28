@@ -1,6 +1,7 @@
 package m.i.d.mid;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,6 +14,7 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -26,7 +28,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -39,6 +40,9 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.tsengvn.typekit.TypekitContextWrapper;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
@@ -47,22 +51,36 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, DirectionsSearchListener {
 
     private GoogleMap mMap;
+    private ProgressDialog progressDialog;
+    private List<Polyline> polylinePaths = new ArrayList<>();
 
-    private ViewGroup infoWindow;
+    private ViewGroup infoWindow;   // 목적에 맞는 위치 infoWindow Layout
+    private ViewGroup infoWindow2;  // 입력받은 위치 infoWindow Layout
+
     private TextView finalAddressTv;
+    private TextView finalNameTv;
     private Button nearInfoBtn;
     private Button saveBtn;
+
+    private LinearLayout directionsSearchResultLinear;
+    private TextView inputNameTv;
+    private TextView kmTv;
+    private TextView durationTv;
+    private Button navigateBtn;
+
     private OnInfoWindowElemTouchListener infoButtonListener1;
     private OnInfoWindowElemTouchListener infoButtonListener2;
+    private OnInfoWindowElemTouchListener infoButtonListener3;
 
 
-
+    LinearLayout inputMarkerInfoWindowLinear;
     LinearLayout searchLinear;
     LinearLayout SearchAllLinear;
     Button locationPlusBtn;
@@ -96,7 +114,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     String middleNearStr="";
     Marker marker;
-    LatLng near_position;
+
+    LatLng final_position;  // 중간거리 계산된 위치
+    LatLng near_position;   // 중간거리 계산된 위치에서 목적에 맞는 가장가까운 위치
 
     Circle clicked_list_circle;
 
@@ -115,10 +135,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 //        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();    //이전 액티비티에서 목적과 인원수 가져오는지 확인
 
-        this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.custom_info_window_layout, null);
+        this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.purpose_marker_info_window_layout, null);
+        this.finalNameTv=(TextView)infoWindow.findViewById(R.id.finalNameTv);
         this.finalAddressTv = (TextView)infoWindow.findViewById(R.id.finalAddressTv);
         this.nearInfoBtn = (Button)infoWindow.findViewById(R.id.nearInfoBtn);
         this.saveBtn = (Button)infoWindow.findViewById(R.id.saveBtn);
+
+        this.infoWindow2 = (ViewGroup)getLayoutInflater().inflate(R.layout.input_marker_info_window_layout,null);
+        this.inputNameTv=(TextView)infoWindow2.findViewById(R.id.inputNameTv);
+        this.kmTv=(TextView)infoWindow2.findViewById(R.id.kmTv);
+        this.durationTv=(TextView)infoWindow2.findViewById(R.id.durationTv);
+        this.navigateBtn=(Button)infoWindow2.findViewById(R.id.navigateBtn);
+        this.directionsSearchResultLinear=(LinearLayout) infoWindow2.findViewById(R.id.directionsSearchResultLinear);
+        inputMarkerInfoWindowLinear=(LinearLayout) infoWindow2.findViewById(R.id.inputMarkerInfoWindowLinear);
 
         searchLinear = (LinearLayout) findViewById(R.id.SearchLinear);
         SearchAllLinear=(LinearLayout) findViewById(R.id.SearchAllLinear);
@@ -240,7 +269,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 //                                    Toast.makeText(getApplicationContext(),"결과 값 넘어옴 "+resultList.get(0)+","+resultList.get(1),Toast.LENGTH_LONG).show();
 
-                                    LatLng final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                    final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
                                     mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
                                     mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
 
@@ -443,132 +472,134 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
             public void onMapLongClick(final LatLng latLng) {
+                if(peopleCount>markerCount){
 
-                AlertDialog.Builder alert_confirm = new AlertDialog.Builder(MapsActivity.this);
-                alert_confirm.setMessage("위치를 추가할까요?").setCancelable(false).setPositiveButton("확인",
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // 'YES'
-                                LatLng longTouchLatLng = new LatLng(latLng.latitude,latLng.longitude);  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                mMap.addMarker(new MarkerOptions().position(longTouchLatLng).title("친구위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.people_marker));
-                                mMap.animateCamera(CameraUpdateFactory.newLatLng(longTouchLatLng));
+                    AlertDialog.Builder alert_confirm = new AlertDialog.Builder(MapsActivity.this);
+                    alert_confirm.setMessage("위치를 추가할까요?").setCancelable(false).setPositiveButton("확인",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // 'YES'
+                                    LatLng longTouchLatLng = new LatLng(latLng.latitude,latLng.longitude);  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                    mMap.addMarker(new MarkerOptions().position(longTouchLatLng).title("친구위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.people_marker));
+                                    mMap.animateCamera(CameraUpdateFactory.newLatLng(longTouchLatLng));
 
-                                tempX.add(latLng.latitude);
-                                tempY.add(latLng.longitude);
+                                    tempX.add(latLng.latitude);
+                                    tempY.add(latLng.longitude);
 
-                                markerCount++;
+                                    markerCount++;
 
-                                if(peopleCount==markerCount){
-                                    locationPlusBtn.setVisibility(View.GONE);
+                                    if(peopleCount==markerCount){
+                                        locationPlusBtn.setVisibility(View.GONE);
 
-                                    double[] x=new double[peopleCount];
-                                    double[] y=new double[peopleCount];
+                                        double[] x=new double[peopleCount];
+                                        double[] y=new double[peopleCount];
 
-                                    for(int i=0;i<peopleCount;i++){
-                                        x[i]=tempX.get(i);
-                                        y[i]=tempY.get(i);
-                                    }
+                                        for(int i=0;i<peopleCount;i++){
+                                            x[i]=tempX.get(i);
+                                            y[i]=tempY.get(i);
+                                        }
 
-                                    GetPosition getPosition=new GetPosition(peopleCount);
-                                    resultList=getPosition.mainFunc(x,y);
+                                        GetPosition getPosition=new GetPosition(peopleCount);
+                                        resultList=getPosition.mainFunc(x,y);
 
 //                                    Toast.makeText(getApplicationContext(),"결과 값 넘어옴 "+resultList.get(0)+","+resultList.get(1),Toast.LENGTH_LONG).show();
 
-                                    LatLng final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                        final_position = new LatLng(resultList.get(0),resultList.get(1));  //선택된 리스트 값으로 마커 찍고 카메라 이동
 //                                    Log.i("resultList",resultList.get(0)+","+resultList.get(1));
-                                    MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
+                                        MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
 
 //                                    Toast.makeText(getApplicationContext(),middleNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
-                                    middleNearStr=middleNearSearch.getMiddleAddress().toString();
-                                    Log.i("middleNearStr",middleNearStr);
+                                        middleNearStr=middleNearSearch.getMiddleAddress().toString();
+                                        Log.i("middleNearStr",middleNearStr);
 //                                    Toast.makeText(getApplicationContext(),middleNearStr,Toast.LENGTH_SHORT).show();
 
-                                    mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
-                                    mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
-
-                                    String dong="";
-
-                                    String[] tempAddress=middleNearStr.split(" ");
-
-                                    for(int i=0;i<tempAddress.length;i++){
-                                        if(tempAddress[i].contains("동")||tempAddress[i].contains("리")||tempAddress[i].contains("읍")||tempAddress[i].contains("면")){
-                                            dong=tempAddress[i];
-                                        }
-                                    }
-                                    Log.i("dong",dong);
-
-//                                    Toast.makeText(getApplicationContext(),dong,Toast.LENGTH_SHORT).show();
-                                    PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
-//                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
-//                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
-                                    Log.i("purposeNearSearch",purposeNearSearch.getMiddleAddress().toString());
-
-                                    StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
-
-                                    while(stk1.hasMoreTokens()){
-                                        StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
-                                        while(stk2.hasMoreTokens()){
-                                            purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
-                                        }
-                                    }
-
-                                    if(purposeNearListItems.size()!=0){
-                                        ArrayList<Integer> distIndex=GetNearPosition.calculMinDist(purposeNearListItems,resultList.get(0),resultList.get(1));
-                                        Toast.makeText(getApplicationContext(), purposeNearListItems.get(distIndex.get(0)).getName() + "이(가) 가장 가깝습니다.", Toast.LENGTH_SHORT).show();
-
-                                        purpose_destination_name=purposeNearListItems.get(distIndex.get(0)).getName().toString();
-                                        purpose_destination_address=purposeNearListItems.get(distIndex.get(0)).getAddress().toString();
-
-                                        near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
-                                        mMap.addMarker(new MarkerOptions().position(near_position).title(purpose_destination_name)).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+                                        mMap.addMarker(new MarkerOptions().position(final_position).title("중간위치")).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_marker));
                                         mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
 
-                                        double difLat = final_position.latitude - near_position.latitude;
-                                        double difLng = final_position.longitude - near_position.longitude;
+                                        String dong="";
 
-                                        double zoom = mMap.getCameraPosition().zoom;
+                                        String[] tempAddress=middleNearStr.split(" ");
 
-                                        double divLat = difLat / (zoom * 2);
-                                        double divLng = difLng / (zoom * 2);
-
-                                        LatLng tmpLatOri = near_position;
-
-                                        for(int i = 0; i < (zoom * 2); i++){
-                                            LatLng loopLatLng = tmpLatOri;
-
-                                            if(i > 0){
-                                                loopLatLng = new LatLng(tmpLatOri.latitude + (divLat * 0.5f), tmpLatOri.longitude + (divLng * 0.5f));
+                                        for(int i=0;i<tempAddress.length;i++){
+                                            if(tempAddress[i].contains("동")||tempAddress[i].contains("리")||tempAddress[i].contains("읍")||tempAddress[i].contains("면")){
+                                                dong=tempAddress[i];
                                             }
+                                        }
+                                        Log.i("dong",dong);
 
-                                            Polyline polyline = mMap.addPolyline(new PolylineOptions()
-                                                    .add(loopLatLng)
-                                                    .add(new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng))
-                                                    .color(Color.parseColor("#8bd9f2"))
-                                                    .width(5f));
+//                                    Toast.makeText(getApplicationContext(),dong,Toast.LENGTH_SHORT).show();
+                                        PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
+//                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
+//                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
+                                        Log.i("purposeNearSearch",purposeNearSearch.getMiddleAddress().toString());
 
-                                            tmpLatOri = new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng);
+                                        StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
+
+                                        while(stk1.hasMoreTokens()){
+                                            StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
+                                            while(stk2.hasMoreTokens()){
+                                                purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
+                                            }
                                         }
 
-                                    }else{
-                                        Toast.makeText(getApplicationContext(), "중간 위치에서 가장 가까운 곳이 없습니다.", Toast.LENGTH_SHORT).show();
+                                        if(purposeNearListItems.size()!=0){
+                                            ArrayList<Integer> distIndex=GetNearPosition.calculMinDist(purposeNearListItems,resultList.get(0),resultList.get(1));
+                                            Toast.makeText(getApplicationContext(), purposeNearListItems.get(distIndex.get(0)).getName() + "이(가) 가장 가깝습니다.", Toast.LENGTH_SHORT).show();
+
+                                            purpose_destination_name=purposeNearListItems.get(distIndex.get(0)).getName().toString();
+                                            purpose_destination_address=purposeNearListItems.get(distIndex.get(0)).getAddress().toString();
+
+                                            near_position = new LatLng(purposeNearListItems.get(distIndex.get(0)).getLat(),purposeNearListItems.get(distIndex.get(0)).getLng());  //선택된 리스트 값으로 마커 찍고 카메라 이동
+                                            mMap.addMarker(new MarkerOptions().position(near_position).title(purpose_destination_name)).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+                                            mMap.animateCamera(CameraUpdateFactory.newLatLng(final_position));
+
+                                            double difLat = final_position.latitude - near_position.latitude;
+                                            double difLng = final_position.longitude - near_position.longitude;
+
+                                            double zoom = mMap.getCameraPosition().zoom;
+
+                                            double divLat = difLat / (zoom * 2);
+                                            double divLng = difLng / (zoom * 2);
+
+                                            LatLng tmpLatOri = near_position;
+
+                                            for(int i = 0; i < (zoom * 2); i++){
+                                                LatLng loopLatLng = tmpLatOri;
+
+                                                if(i > 0){
+                                                    loopLatLng = new LatLng(tmpLatOri.latitude + (divLat * 0.5f), tmpLatOri.longitude + (divLng * 0.5f));
+                                                }
+
+                                                Polyline polyline = mMap.addPolyline(new PolylineOptions()
+                                                        .add(loopLatLng)
+                                                        .add(new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng))
+                                                        .color(Color.parseColor("#8bd9f2"))
+                                                        .width(5f));
+
+                                                tmpLatOri = new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng);
+                                            }
+
+                                        }else{
+                                            Toast.makeText(getApplicationContext(), "중간 위치에서 가장 가까운 곳이 없습니다.", Toast.LENGTH_SHORT).show();
+                                        }
+
+
+
+
                                     }
-
-
-
-
                                 }
-                            }
-                        }).setNegativeButton("취소",
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // 'No'
-                                return;
-                            }
-                        });
-                AlertDialog alert = alert_confirm.create();
-                alert.show();
+                            }).setNegativeButton("취소",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // 'No'
+                                    return;
+                                }
+                            });
+                    AlertDialog alert = alert_confirm.create();
+                    alert.show();
+                }
 
             }
         });
@@ -609,7 +640,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mMap.animateCamera(CameraUpdateFactory.newLatLng(clickedMarker.getPosition()));
                     if(marker.getPosition().latitude==near_position.latitude && marker.getPosition().longitude==near_position.longitude){
 //                        marker.setSnippet(purpose_destination_address);
-
 
                         // Setting custom OnTouchListener which deals with the pressed state
                         // so it shows up
@@ -715,6 +745,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 // We must call this to set the current marker and infoWindow references
                                 // to the MapWrapperLayout
                                 if(marker.getPosition().latitude==near_position.latitude && marker.getPosition().longitude==near_position.longitude){
+
+                                    finalNameTv.setText(purpose_destination_name);
                                     finalAddressTv.setText(purpose_destination_address);
                                     infoButtonListener1.setMarker(marker);
                                     infoButtonListener2.setMarker(marker);
@@ -726,6 +758,55 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             }
                         });
 
+
+                    }else if(marker.getPosition().latitude!=final_position.latitude && marker.getPosition().longitude != final_position.longitude && marker.getPosition().latitude!=near_position.latitude && marker.getPosition().longitude!=near_position.longitude){
+                        final MapWrapperLayout mapWrapperLayout2 = (MapWrapperLayout)findViewById(R.id.map_relative_layout);
+                        mapWrapperLayout2.init(mMap, getPixelsFromDp(getApplicationContext(), 39 + 20));
+
+                        infoButtonListener3=new OnInfoWindowElemTouchListener(navigateBtn) {
+                            @Override
+                            protected void onClickConfirmed(View v, Marker marker) {
+                                Log.i("길찾기","클릭");
+                                marker.hideInfoWindow();
+
+                                onDirectionsSearchStart();
+
+                                String startLocation=marker.getPosition().latitude+","+marker.getPosition().longitude;
+                                String endLocation=near_position.latitude+","+near_position.longitude;
+                                DirectionsSearch directionsSearch=new DirectionsSearch(startLocation,endLocation);
+//                                Log.i("제발",directionsSearch.getDirections().toString());
+
+                                try {
+                                    parseJSON(directionsSearch.getDirections().toString());
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        };
+                        navigateBtn.setOnTouchListener(infoButtonListener3);
+
+                        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+                            @Override
+                            public View getInfoWindow(Marker marker) {
+                                return null;
+                            }
+
+                            @Override
+                            public View getInfoContents(Marker marker) {
+                                // Setting up the infoWindow with current's marker info
+                                // We must call this to set the current marker and infoWindow references
+                                // to the MapWrapperLayout
+                                if(marker.getPosition().latitude!=final_position.latitude && marker.getPosition().longitude != final_position.longitude && marker.getPosition().latitude!=near_position.latitude && marker.getPosition().longitude!=near_position.longitude){
+                                    inputNameTv.setText(purpose_destination_name);
+                                    infoButtonListener3.setMarker(marker);
+                                    mapWrapperLayout2.setMarkerWithInfoWindow(marker, infoWindow2);
+                                    return infoWindow2;
+                                }else{
+                                    return null;
+                                }
+                            }
+                        });
 
                     }else{
                         marker.setSnippet("추가 위치정보 들어갈 자리");
@@ -749,4 +830,119 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int)(dp * scale + 0.5f);
     }
+
+    @Override
+    public void onDirectionsSearchStart() {
+        progressDialog=ProgressDialog.show(this,"경로를 준비중입니다.","경로를 찾았습니다.",true);
+
+    }
+
+    @Override
+    public void onDirectionsSearchSuccess(List<Route> routes) {
+        progressDialog.dismiss();
+        directionsSearchResultLinear.setVisibility(View.VISIBLE);
+        directionsSearchResultLinear.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+//        LinearLayout directionsSearchResultLinear=new LinearLayout(getApplicationContext());
+//        directionsSearchResultLinear.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+//        directionsSearchResultLinear.setOrientation(LinearLayout.HORIZONTAL);
+//        directionsSearchResultLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        for(Route route : routes){
+            kmTv.setText(route.distance.text);
+            durationTv.setText(route.duration.text);
+            PolylineOptions polylineOptions=new PolylineOptions().geodesic(true).color(Color.parseColor("#A4A4A4")).width(10);
+            for(int i=0;i<route.points.size();i++){
+                polylineOptions.add(route.points.get(i));
+            }
+            polylinePaths.add(mMap.addPolyline(polylineOptions));
+        }
+
+    }
+
+    private void parseJSON (String data) throws JSONException {
+        if(data == null)    return;
+
+        List<Route> routes=new ArrayList<Route>();
+        JSONObject jsonData=new JSONObject(data);
+        JSONArray jsonRoutes=jsonData.getJSONArray("routes");
+        for(int i=0;i<jsonRoutes.length();i++){
+            JSONObject jsonRoute=jsonRoutes.getJSONObject(i);
+            Route route=new Route();
+
+            JSONObject overview_polylineJson= jsonRoute.getJSONObject("overview_polyline");
+            JSONArray jsonLegs = jsonRoute.getJSONArray("legs");
+            JSONObject jsonLeg = jsonLegs.getJSONObject(0);
+            JSONObject jsonDistance = jsonLeg.getJSONObject("distance");
+            JSONObject jsonDuration = jsonLeg.getJSONObject("duration");
+            JSONObject jsonEndLocation = jsonLeg.getJSONObject("end_location");
+            JSONObject jsonStartLocation = jsonLeg.getJSONObject("start_location");
+
+            JSONArray jsonSteps = jsonLeg.getJSONArray("steps");
+//            Log.i("jsonSteps",""+jsonSteps.length());
+            for(int k=0;k<jsonSteps.length();k++){
+//                Log.i("확인",jsonSteps.getJSONObject(k).getString("html_instructions"));
+                TextView html_instructionsTv=new TextView(MapsActivity.this);
+                html_instructionsTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                html_instructionsTv.setTextSize(15);
+                html_instructionsTv.setText(jsonSteps.getJSONObject(k).getString("html_instructions"));
+                inputMarkerInfoWindowLinear.addView(html_instructionsTv);
+
+            }
+
+
+            route.distance = new Distance(jsonDistance.getString("text"), jsonDistance.getInt("value"));
+            route.duration = new Duration(jsonDuration.getString("text"), jsonDuration.getInt("value"));
+            route.endAddress = jsonLeg.getString("end_address");
+            route.startAddress = jsonLeg.getString("start_address");
+            route.startLocation = new LatLng(jsonStartLocation.getDouble("lat"), jsonStartLocation.getDouble("lng"));
+            route.endLocation = new LatLng(jsonEndLocation.getDouble("lat"), jsonEndLocation.getDouble("lng"));
+            route.points = decodePolyLine(overview_polylineJson.getString("points"));
+
+
+            routes.add(route);
+            Log.i("parseJSON","여기까지");
+
+        }
+
+        onDirectionsSearchSuccess(routes);
+
+    }
+
+    private List<LatLng> decodePolyLine(final String poly){
+        int len=poly.length();
+        int index=0;
+        List<LatLng> decoded=new ArrayList<LatLng>();
+        int lat=0;
+        int lng=0;
+
+        while(index<len){
+            int b;
+            int shift=0;
+            int result=0;
+            do{
+                b=poly.charAt(index++)-63;
+                result |= (b&0x1f)<<shift;
+                shift+=5;
+
+            }while(b>=0x20);
+            int dlat=((result&1)!=0 ? ~(result>>1) : (result>>1));
+            lat+= dlat;
+
+            shift=0;
+            result=0;
+            do{
+                b=poly.charAt(index++)-63;
+                result |= (b&0x1f)<<shift;
+                shift+=5;
+
+            }while(b>=0x20);
+            int dlng=((result&1)!=0 ? ~(result>>1):(result>>1));
+            lng+=dlng;
+
+            decoded.add(new LatLng(lat/100000d,lng/100000d));
+        }
+        return decoded;
+    }
+
 }

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/inputMarkerInfoWindowLinear"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+        <TextView
+            android:id="@+id/inputNameTv"
+            android:layout_marginTop="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="목적지"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#4D4D4D"/>
+
+        <TextView
+            android:layout_marginTop="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="까지 "
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#4D4D4D"/>
+
+
+        <Button
+            android:id="@+id/navigateBtn"
+            android:layout_marginTop="3dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:text="길"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/directionsSearchResultLinear"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:visibility="invisible">
+
+        <TextView
+            android:layout_marginTop="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="거리:"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#4D4D4D"/>
+
+        <TextView
+            android:id="@+id/kmTv"
+            android:layout_marginTop="5dp"
+            android:layout_marginRight="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:textSize="17sp"
+            android:textColor="#4D4D4D"
+            android:text="00"/>
+
+        <TextView
+            android:layout_marginTop="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="예상시간:"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#4D4D4D"/>
+
+        <TextView
+            android:id="@+id/durationTv"
+            android:layout_marginTop="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:textSize="17sp"
+            android:textColor="#4D4D4D"
+            android:text="00"/>
+
+
+    </LinearLayout>
+
+
+
+
+
+
+</LinearLayout>

@@ -1,0 +1,237 @@
+{
+   "geocoded_waypoints" : [
+      {
+         "geocoder_status" : "OK",
+         "place_id" : "ChIJg0C-gFlbezURhMNWEIN-jIU",
+         "types" : [ "establishment", "point_of_interest", "premise" ]
+      },
+      {
+         "geocoder_status" : "OK",
+         "place_id" : "ChIJPY4_al5bezUR1OXmb3Vc29g",
+         "types" : [ "political", "premise" ]
+      }
+   ],
+   "routes" : [
+      {
+         "bounds" : {
+            "northeast" : {
+               "lat" : 37.29146,
+               "lng" : 127.045352
+            },
+            "southwest" : {
+               "lat" : 37.28435,
+               "lng" : 127.039859
+            }
+         },
+         "copyrights" : "지도 데이터 ©2016 SK telecom",
+         "legs" : [
+            {
+               "arrival_time" : {
+                  "text" : "오후 9:06",
+                  "time_zone" : "Asia/Seoul",
+                  "value" : 1480334814
+               },
+               "departure_time" : {
+                  "text" : "오후 8:38",
+                  "time_zone" : "Asia/Seoul",
+                  "value" : 1480333092
+               },
+               "distance" : {
+                  "text" : "1.6 km",
+                  "value" : 1559
+               },
+               "duration" : {
+                  "text" : "29분",
+                  "value" : 1722
+               },
+               "end_address" : "대한민국 경기도 수원시 영통구 이의동 872-2",
+               "end_location" : {
+                  "lat" : 37.29146,
+                  "lng" : 127.044116
+               },
+               "start_address" : "대한민국 수원시 우만1동 아주대학교 산학협력원",
+               "start_location" : {
+                  "lat" : 37.2851815,
+                  "lng" : 127.045332
+               },
+               "steps" : [
+                  {
+                     "distance" : {
+                        "text" : "93 m",
+                        "value" : 93
+                     },
+                     "duration" : {
+                        "text" : "2분",
+                        "value" : 94
+                     },
+                     "end_location" : {
+                        "lat" : 37.28435,
+                        "lng" : 127.045209
+                     },
+                     "html_instructions" : "아주대학교생활관까지 도보",
+                     "polyline" : {
+                        "points" : "kgqbFiplfWdDV"
+                     },
+                     "start_location" : {
+                        "lat" : 37.2851815,
+                        "lng" : 127.045332
+                     },
+                     "steps" : [
+                        {
+                           "distance" : {
+                              "text" : "93 m",
+                              "value" : 93
+                           },
+                           "duration" : {
+                              "text" : "2분",
+                              "value" : 94
+                           },
+                           "end_location" : {
+                              "lat" : 37.28435,
+                              "lng" : 127.045209
+                           },
+                           "polyline" : {
+                              "points" : "kgqbFiplfWdDV"
+                           },
+                           "start_location" : {
+                              "lat" : 37.2851815,
+                              "lng" : 127.045332
+                           },
+                           "travel_mode" : "WALKING"
+                        }
+                     ],
+                     "travel_mode" : "WALKING"
+                  },
+                  {
+                     "distance" : {
+                        "text" : "1.3 km",
+                        "value" : 1336
+                     },
+                     "duration" : {
+                        "text" : "5분",
+                        "value" : 310
+                     },
+                     "end_location" : {
+                        "lat" : 37.290794,
+                        "lng" : 127.045331
+                     },
+                     "html_instructions" : "버스 광교중앙.아주대역환승센터행",
+                     "polyline" : {
+                        "points" : "ebqbFqolfWUOi@Ka@BUN}@|DBl@GJuAm@QHg@tA[xBAzA?jLC^{@hBaAyA}I{L_MoP"
+                     },
+                     "start_location" : {
+                        "lat" : 37.28435,
+                        "lng" : 127.045209
+                     },
+                     "transit_details" : {
+                        "arrival_stop" : {
+                           "location" : {
+                              "lat" : 37.290794,
+                              "lng" : 127.045331
+                           },
+                           "name" : "중소기업센터.경기일자리센터"
+                        },
+                        "arrival_time" : {
+                           "text" : "오후 9:04",
+                           "time_zone" : "Asia/Seoul",
+                           "value" : 1480334696
+                        },
+                        "departure_stop" : {
+                           "location" : {
+                              "lat" : 37.28435,
+                              "lng" : 127.045209
+                           },
+                           "name" : "아주대학교생활관"
+                        },
+                        "departure_time" : {
+                           "text" : "오후 8:59",
+                           "time_zone" : "Asia/Seoul",
+                           "value" : 1480334386
+                        },
+                        "headsign" : "광교중앙.아주대역환승센터",
+                        "headway" : 1200,
+                        "line" : {
+                           "agencies" : [
+                              {
+                                 "name" : "경기도버스운송사업조합",
+                                 "url" : "http://www.odsay.com/bus/Kyeonggi_Main.asp?CID=1&LMenu=1"
+                              }
+                           ],
+                           "color" : "#0abb0c",
+                           "name" : "경기 마을버스",
+                           "short_name" : "7",
+                           "text_color" : "#ffffff",
+                           "vehicle" : {
+                              "icon" : "//maps.gstatic.com/mapfiles/transit/iw2/6/bus2.png",
+                              "name" : "버스",
+                              "type" : "BUS"
+                           }
+                        },
+                        "num_stops" : 3
+                     },
+                     "travel_mode" : "TRANSIT"
+                  },
+                  {
+                     "distance" : {
+                        "text" : "0.1 km",
+                        "value" : 130
+                     },
+                     "duration" : {
+                        "text" : "2분",
+                        "value" : 118
+                     },
+                     "end_location" : {
+                        "lat" : 37.29146,
+                        "lng" : 127.044116
+                     },
+                     "html_instructions" : "대한민국 경기도 수원시 영통구 이의동 872-2까지 도보",
+                     "polyline" : {
+                        "points" : "mjrbFiplfWeCpF"
+                     },
+                     "start_location" : {
+                        "lat" : 37.290794,
+                        "lng" : 127.045331
+                     },
+                     "steps" : [
+                        {
+                           "distance" : {
+                              "text" : "0.1 km",
+                              "value" : 130
+                           },
+                           "duration" : {
+                              "text" : "2분",
+                              "value" : 118
+                           },
+                           "end_location" : {
+                              "lat" : 37.29146,
+                              "lng" : 127.044116
+                           },
+                           "polyline" : {
+                              "points" : "mjrbFiplfWeCpF"
+                           },
+                           "start_location" : {
+                              "lat" : 37.290794,
+                              "lng" : 127.045331
+                           },
+                           "travel_mode" : "WALKING"
+                        }
+                     ],
+                     "travel_mode" : "WALKING"
+                  }
+               ],
+               "traffic_speed_entry" : [],
+               "via_waypoint" : []
+            }
+         ],
+         "overview_polyline" : {
+            "points" : "kgqbFiplfWdDVUOi@Ka@BUN}@|DBl@GJuAm@QHg@tA[xBAfOC^{@hBaAyA}I{L_MoPeCpF"
+         },
+         "summary" : "",
+         "warnings" : [
+            "도보 길찾기는 베타 서비스입니다. 주의 – 이 경로에는 인도 또는 보행 경로가 누락되었을 수도 있습니다."
+         ],
+         "waypoint_order" : []
+      }
+   ],
+   "status" : "OK"
+}
