@@ -39,6 +39,7 @@
             android:text="주변정보"/>
         <Button
             android:id="@+id/saveBtn"
+            android:visibility="gone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="저장"/>

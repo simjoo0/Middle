@@ -96,6 +96,34 @@
 
 
 
+    <ScrollView
+        android:id="@+id/howToGoScroll"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:visibility="invisible"
+        android:background="#FFFFFF"
+        android:layout_margin="10dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
+
+        <LinearLayout
+            android:id="@+id/howToGoLinear"
+            android:layout_alignParentBottom="true"
+            android:gravity="center_horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:orientation="vertical"
+            android:visibility="invisible">
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+
+
+
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"

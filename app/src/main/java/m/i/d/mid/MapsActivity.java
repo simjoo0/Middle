@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
@@ -14,6 +15,7 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,8 +23,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -89,6 +93,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LinearLayout purposeListLinear;
     ListView purposeListView;
 
+    LinearLayout howToGoLinear;
+    ScrollView howToGoScroll;
+
     ArrayList<ListViewItem> data;   //리스트뷰 아이템 담는 arrayList
     ArrayList<Double> resultList=new ArrayList<Double>(); // 중간좌표
 
@@ -97,6 +104,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ArrayList<Double> tempY=new ArrayList<Double>();
 
     ArrayList<Circle> circleArrayList=new ArrayList<Circle>();
+    ArrayList<Marker> busMarkerArrayList=new ArrayList<Marker>();
 
     PurposeNearListAdapter purposeNearListAdapter;
 
@@ -148,6 +156,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         this.navigateBtn=(Button)infoWindow2.findViewById(R.id.navigateBtn);
         this.directionsSearchResultLinear=(LinearLayout) infoWindow2.findViewById(R.id.directionsSearchResultLinear);
         inputMarkerInfoWindowLinear=(LinearLayout) infoWindow2.findViewById(R.id.inputMarkerInfoWindowLinear);
+
+        howToGoLinear=(LinearLayout) findViewById(R.id.howToGoLinear);
+        howToGoScroll=(ScrollView) findViewById(R.id.howToGoScroll);
 
         searchLinear = (LinearLayout) findViewById(R.id.SearchLinear);
         SearchAllLinear=(LinearLayout) findViewById(R.id.SearchAllLinear);
@@ -637,6 +648,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     AlertDialog alert = alert_confirm.create();
                     alert.show();
                 }else{
+
+                    if((marker.getPosition().latitude!=near_position.latitude && marker.getPosition().longitude!=near_position.longitude) && (marker.getPosition().latitude!=final_position.latitude && marker.getPosition().longitude!=final_position.longitude)){
+                        saveBtn.setVisibility(View.GONE);
+                        directionsSearchResultLinear.setVisibility(View.GONE);
+                        howToGoLinear.removeAllViews();
+                        howToGoLinear.setVisibility(View.GONE);
+                        howToGoScroll.setVisibility(View.GONE);
+
+                        for(Polyline polyline : polylinePaths){
+                            polyline.remove();
+                        }
+                        polylinePaths.clear();
+
+                        for(Marker marker : busMarkerArrayList){
+                            marker.remove();
+                        }
+                        busMarkerArrayList.clear();
+                    }
+
+
+
                     mMap.animateCamera(CameraUpdateFactory.newLatLng(clickedMarker.getPosition()));
                     if(marker.getPosition().latitude==near_position.latitude && marker.getPosition().longitude==near_position.longitude){
 //                        marker.setSnippet(purpose_destination_address);
@@ -770,6 +802,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 marker.hideInfoWindow();
 
                                 onDirectionsSearchStart();
+                                saveBtn.setVisibility(View.VISIBLE);
 
                                 String startLocation=marker.getPosition().latitude+","+marker.getPosition().longitude;
                                 String endLocation=near_position.latitude+","+near_position.longitude;
@@ -863,6 +896,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void parseJSON (String data) throws JSONException {
         if(data == null)    return;
 
+        howToGoScroll.setVisibility(View.VISIBLE);
+        howToGoLinear.setVisibility(View.VISIBLE);
+
         List<Route> routes=new ArrayList<Route>();
         JSONObject jsonData=new JSONObject(data);
         JSONArray jsonRoutes=jsonData.getJSONArray("routes");
@@ -882,11 +918,163 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //            Log.i("jsonSteps",""+jsonSteps.length());
             for(int k=0;k<jsonSteps.length();k++){
 //                Log.i("확인",jsonSteps.getJSONObject(k).getString("html_instructions"));
+                LinearLayout stepLinear=new LinearLayout(MapsActivity.this);
+                stepLinear.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+                stepLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+                stepLinear.setOrientation(LinearLayout.VERTICAL);
+
                 TextView html_instructionsTv=new TextView(MapsActivity.this);
                 html_instructionsTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                 html_instructionsTv.setTextSize(15);
+                html_instructionsTv.setTypeface(null, Typeface.BOLD);
                 html_instructionsTv.setText(jsonSteps.getJSONObject(k).getString("html_instructions"));
-                inputMarkerInfoWindowLinear.addView(html_instructionsTv);
+
+                LinearLayout stepDetailLinear=new LinearLayout(MapsActivity.this);
+                stepDetailLinear.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+                stepDetailLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+                stepDetailLinear.setOrientation(LinearLayout.HORIZONTAL);
+
+                TextView distanceTv=new TextView(MapsActivity.this);
+                distanceTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                distanceTv.setTextSize(15);
+                distanceTv.setText(jsonSteps.getJSONObject(k).getJSONObject("distance").getString("text")+" ");
+
+                TextView durationTv=new TextView(MapsActivity.this);
+                durationTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                durationTv.setTextSize(15);
+                durationTv.setText(jsonSteps.getJSONObject(k).getJSONObject("duration").getString("text")+" ");
+
+                TextView travel_modeTv=new TextView(MapsActivity.this);
+                travel_modeTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                travel_modeTv.setTextSize(15);
+                if(jsonSteps.getJSONObject(k).getString("travel_mode").equals("WALKING")){
+                    travel_modeTv.setText("걷기");
+                }else{
+                    travel_modeTv.setText("대중교통 이용");
+                }
+
+                stepLinear.addView(html_instructionsTv);
+                stepDetailLinear.addView(distanceTv);
+                stepDetailLinear.addView(durationTv);
+                stepDetailLinear.addView(travel_modeTv);
+                howToGoLinear.addView(stepLinear);
+                howToGoLinear.addView(stepDetailLinear);
+
+                if(!jsonSteps.getJSONObject(k).isNull("transit_details")){
+//                    Log.i("확인", ""+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("line").getString("short_name"));
+                    Double busDepartLat=jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("departure_stop").getJSONObject("location").getDouble("lat");
+                    Double busDepartLng=jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("departure_stop").getJSONObject("location").getDouble("lng");
+
+                    Double busArrivalLat=jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("arrival_stop").getJSONObject("location").getDouble("lat");
+                    Double busArrivalLng=jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("arrival_stop").getJSONObject("location").getDouble("lng");
+
+                    busMarkerArrayList.add(mMap.addMarker(new MarkerOptions().position(new LatLng(busDepartLat,busDepartLng))));
+                    busMarkerArrayList.add(mMap.addMarker(new MarkerOptions().position(new LatLng(busArrivalLat,busArrivalLng))));
+                    for(Marker marker:busMarkerArrayList){
+                        marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.bus_stop_marker));
+                    }
+
+                    LinearLayout transitLinear=new LinearLayout(MapsActivity.this);
+                    transitLinear.setLayoutParams(new LinearLayout.LayoutParams(1000,LinearLayout.LayoutParams.WRAP_CONTENT));
+                    transitLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+                    transitLinear.setOrientation(LinearLayout.VERTICAL);
+
+                    LinearLayout transitHeadLinear=new LinearLayout(MapsActivity.this);
+                    transitHeadLinear.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,70));
+                    transitHeadLinear.setOrientation(LinearLayout.HORIZONTAL);
+
+                    TextView short_nameTv=new TextView(MapsActivity.this);
+                    short_nameTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    short_nameTv.setTextSize(15);
+                    short_nameTv.setTextColor(Color.parseColor(jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("line").getString("color")));
+                    short_nameTv.setText(""+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("line").getString("short_name"));
+
+                    TextView vehicle_name_Tv=new TextView(MapsActivity.this);
+                    vehicle_name_Tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    vehicle_name_Tv.setTextSize(15);
+                    vehicle_name_Tv.setText("번 "+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("line").getJSONObject("vehicle").getString("name"));
+
+                    transitHeadLinear.addView(short_nameTv);
+                    transitHeadLinear.addView(vehicle_name_Tv);
+
+                    LinearLayout transitDirectionLinear=new LinearLayout(MapsActivity.this);
+                    transitDirectionLinear.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+                    transitDirectionLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+                    transitDirectionLinear.setOrientation(LinearLayout.HORIZONTAL);
+
+                        LinearLayout transitDepartLinear=new LinearLayout(MapsActivity.this);
+                        transitDepartLinear.setLayoutParams(new LinearLayout.LayoutParams(400,LinearLayout.LayoutParams.WRAP_CONTENT));
+                        transitDepartLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+                        transitDepartLinear.setOrientation(LinearLayout.VERTICAL);
+
+                        TextView departure_stop_name_Tv=new TextView(MapsActivity.this);
+                        departure_stop_name_Tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        departure_stop_name_Tv.setTextSize(15);
+                        departure_stop_name_Tv.setText(jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("departure_stop").getString("name"));
+
+                    Log.i("출발정류소이름",""+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("departure_stop").getString("name"));
+
+
+                        TextView departure_time_Tv=new TextView(MapsActivity.this);
+                        departure_time_Tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        departure_time_Tv.setTextSize(15);
+                        departure_time_Tv.setText("출발 : "+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("departure_time").getString("text"));
+
+                    Log.i("출발정류소시간",""+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("departure_time").getString("text"));
+
+                        transitDepartLinear.addView(departure_time_Tv);
+                        transitDepartLinear.addView(departure_stop_name_Tv);
+
+
+                    LinearLayout transitArrivalLinear=new LinearLayout(MapsActivity.this);
+                    transitArrivalLinear.setLayoutParams(new LinearLayout.LayoutParams(400,LinearLayout.LayoutParams.WRAP_CONTENT));
+                    transitArrivalLinear.setGravity(Gravity.CENTER_HORIZONTAL);
+                    transitArrivalLinear.setOrientation(LinearLayout.VERTICAL);
+
+                        TextView arrival_stop_name_Tv=new TextView(MapsActivity.this);
+                        arrival_stop_name_Tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        arrival_stop_name_Tv.setTextSize(15);
+                        arrival_stop_name_Tv.setText(jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("arrival_stop").getString("name"));
+
+                        TextView arrival_time_Tv=new TextView(MapsActivity.this);
+                        arrival_time_Tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        arrival_time_Tv.setTextSize(15);
+                        arrival_time_Tv.setText("도착 : "+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("arrival_time").getString("text"));
+
+                        transitArrivalLinear.addView(arrival_time_Tv);
+                        transitArrivalLinear.addView(arrival_stop_name_Tv);
+
+                    TextView lineTv=new TextView(MapsActivity.this);
+                    lineTv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    lineTv.setGravity(Gravity.CENTER_VERTICAL);
+                    lineTv.setTextSize(15);
+                    lineTv.setText("   →   ");
+
+                    transitDirectionLinear.addView(transitDepartLinear);
+                    transitDirectionLinear.addView(lineTv);
+                    transitDirectionLinear.addView(transitArrivalLinear);
+
+                    transitLinear.addView(transitHeadLinear);
+                    transitLinear.addView(transitDirectionLinear);
+
+                    howToGoLinear.addView(transitLinear);
+                }
+
+
+
+
+                if(k!=(jsonSteps.length()-1)){
+                    ImageView imageView=new ImageView(MapsActivity.this);
+                    imageView.setLayoutParams(new LinearLayout.LayoutParams(70,70));
+                    imageView.setImageDrawable(getResources().getDrawable(R.drawable.icon0));
+                    howToGoLinear.addView(imageView);
+                }
+                howToGoScroll.bringToFront();
+                howToGoLinear.bringToFront();
+//
+//                stepLinear.addView(stepDetailLinear);
+
+//                inputMarkerInfoWindowLinear.addView(stepLinear);
 
             }
 
