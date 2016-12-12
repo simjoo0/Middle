@@ -27,6 +27,7 @@
         android:textColor="#4D4D4D"/>
 
     <LinearLayout
+        android:layout_marginTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
@@ -34,15 +35,15 @@
 
         <Button
             android:id="@+id/nearInfoBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="주변정보"/>
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/information_btn"/>
         <Button
             android:id="@+id/saveBtn"
             android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="저장"/>
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/save_btn"/>
 
     </LinearLayout>
 

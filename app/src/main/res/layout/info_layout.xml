@@ -43,7 +43,7 @@
 
             <Spinner
                 android:id="@+id/spinner1"
-                android:layout_width="40dp"
+                android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_weight="1"
                 android:layout_gravity="center_horizontal"
@@ -137,14 +137,24 @@
         android:layout_marginRight="20dp"
         android:layout_marginTop="20dp"/>
 
+    <Button
+        android:id="@+id/dataBtn"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/open_data_btn"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="30dp"
+        android:layout_marginBottom="20dp"/>
+
         <LinearLayout
             android:id="@+id/questionLinear"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="30dp"
+            android:layout_margin="25dp"
             android:orientation="vertical"
             android:gravity="center_horizontal"
-            android:background="#E0E0E0"
+            android:background="#FFFFFF"
             android:visibility="invisible">
 
             <LinearLayout
@@ -154,8 +164,151 @@
                 <Button
                     android:id="@+id/closeBtn"
                     android:layout_margin="10dp"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/close_btn"
+                    android:gravity="right"/>
+            </LinearLayout>
+
+            <ScrollView
+                android:id="@+id/Scroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
+
+                <TextView
+                    android:layout_width="300dp"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="1. 인원 수와 목적을 선택해 주세요."/>
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/info01"/>
+
+                <TextView
+                    android:layout_marginTop="25dp"
+                    android:layout_width="300dp"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="2. 인원만큼 주소를 입력해 주세요."/>
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/info02"/>
+                <TextView
+                    android:layout_marginTop="25dp"
+                    android:layout_width="300dp"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="3. 위치입력은 검색 또는 지도 롱터치를 통해 입력이 됩니다."/>
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/info04"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info03"/>
+                <TextView
+                    android:layout_marginTop="25dp"
+                    android:layout_width="300dp"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="4. 마커를 클릭하면 주변정보를 알 수 있습니다."/>
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/info05"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info06"/>
+                    <TextView
+                        android:layout_marginTop="25dp"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="20sp"
+                        android:text="5. 입력한 위치를 클릭하면 길찾기를 할 수 있습니다."/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info08"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info09"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info10"/>
+                    <TextView
+                        android:layout_marginTop="25dp"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="20sp"
+                        android:text="6. 길찾기를 한 후에는 저장버튼이 활성화됩니다."/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info11"/>
+                    <TextView
+                        android:layout_marginTop="25dp"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="20sp"
+                        android:text="7. 열기 버튼을 누르면 저장된 위치목록이 보여집니다."/>
+                    <ImageView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:src="@drawable/open_data_btn"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info12"/>
+                    <TextView
+                        android:layout_marginTop="25dp"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="20sp"
+                        android:text="8. 공유버튼을 누르면 카카오톡으로 위치가 공유됩니다."/>
+                    <ImageView
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:src="@drawable/share_btn"/>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/info13"/>
+
+                </LinearLayout>
+        </ScrollView>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/dataLinear"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="30dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:background="#D4F4FA"
+            android:visibility="invisible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+                <Button
+                    android:id="@+id/closeBtn2"
+                    android:layout_margin="10dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:background="@drawable/close_btn"
                     android:gravity="right"/>
             </LinearLayout>
@@ -164,23 +317,45 @@
                 android:layout_width="300dp"
                 android:layout_height="wrap_content"
                 android:textSize="20sp"
-                android:text="1. 인원 수와 목적을 선택해 주세요."/>
-            <TextView
-                android:layout_width="300dp"
-                android:layout_height="wrap_content"
-                android:textSize="20sp"
-                android:text="2. 인원만큼 주소를 입력해 주세요."/>
-            <TextView
-                android:layout_width="300dp"
-                android:layout_height="wrap_content"
-                android:textSize="20sp"
-                android:text="3. 입력이 완료되면 목적에 맞는 중간 위치가 지도에 표시됩니다."/>
-            <TextView
-                android:layout_width="300dp"
-                android:layout_height="wrap_content"
-                android:textSize="20sp"
-                android:text="4. 마커를 클릭하면 주변정보를 알 수 있습니다."/>
-        </LinearLayout>
+                android:paddingLeft="15dp"
+                android:text="저장된 위치목록"/>
 
+            <LinearLayout
+                android:paddingTop="15dp"
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:text="인원"
+                    android:layout_width="30dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"/>
+
+                <TextView
+                    android:text="출발지"
+                    android:layout_width="124dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"/>
+
+                <TextView
+                    android:text="약속장소"
+                    android:layout_width="124dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"/>
+            </LinearLayout>
+
+            <GridView
+                android:id="@+id/gridView"
+                android:layout_gravity="center"
+                android:layout_width="280dp"
+                android:layout_height="match_parent"
+                android:numColumns="1"
+                android:verticalSpacing="5dp"
+                android:columnWidth="90dp"
+                android:stretchMode="columnWidth"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"/>
+        </LinearLayout>
 
 </RelativeLayout>

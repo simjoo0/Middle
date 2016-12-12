@@ -1,13 +1,18 @@
 package m.i.d.mid;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
@@ -26,6 +31,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +48,12 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.kakao.kakaolink.AppActionBuilder;
+import com.kakao.kakaolink.AppActionInfoBuilder;
+import com.kakao.kakaolink.KakaoLink;
+import com.kakao.kakaolink.KakaoTalkLinkMessageBuilder;
+import com.kakao.kakaolink.internal.AppActionInfo;
+import com.kakao.util.KakaoParameterException;
 import com.tsengvn.typekit.TypekitContextWrapper;
 
 import org.json.JSONArray;
@@ -50,8 +62,13 @@ import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -60,6 +77,8 @@ import java.util.StringTokenizer;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, DirectionsSearchListener {
+
+    String filename;
 
     private GoogleMap mMap;
     private ProgressDialog progressDialog;
@@ -83,11 +102,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private OnInfoWindowElemTouchListener infoButtonListener2;
     private OnInfoWindowElemTouchListener infoButtonListener3;
 
-
     LinearLayout inputMarkerInfoWindowLinear;
     LinearLayout searchLinear;
     LinearLayout SearchAllLinear;
     Button locationPlusBtn;
+    Button shareBtn;
     EditText addressEt;
 
     LinearLayout purposeListLinear;
@@ -112,6 +131,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String markingResultName="";    //리스트뷰 아이템 선택 시 가져오는 이름을 저장할 문자열
     String markingResultLat="";     //리스트뷰 아이템 선택 시 가져오는 위도를 저장할 문자열
     String markingResultLng="";     //리스트뷰 아이템 선택 시 가져오는 경도를 저장할 문자열
+    String dong="";
 
     String purpose_destination_name="";
     String purpose_destination_address="";
@@ -128,6 +148,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     Circle clicked_list_circle;
 
+    //기록에서 클릭하고 들어왔을 때 지도에 찍어줌
+    int dataBaseFlag=0; //클릭하고 들어왔을 때 1로 바뀜
+    int dataPeople=0;   //사람수
+    double [] x_location;   //사용자의 x좌표의 배열
+    double [] y_location;   //사용자의 y좌표의 배열
+    String data_meetingPurposeStr="";   //목적
+    String data_dong=""; //지역 이름
+
+    //카카오톡 공유하고 나서 다시 앱으로 들어왔을 때 필요한 변수
+    Double final_location_x=0.0;    //수학적 중심거리와 가장 가까운 목적에 기반한 장소의 x, y 좌표
+    Double final_location_y=0.0;
+
+    Double x_middle_location=0.0;  //수학적 중심거리의 x, y 좌표
+    Double y_middle_location=0.0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -137,11 +172,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        Intent intent=new Intent(this.getIntent());
-        meetingPurposeStr=intent.getStringExtra("meetingPurPose").toString();
-        peopleCount=intent.getIntExtra("peopleCount",0);
-
-//        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();    //이전 액티비티에서 목적과 인원수 가져오는지 확인
 
         this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.purpose_marker_info_window_layout, null);
         this.finalNameTv=(TextView)infoWindow.findViewById(R.id.finalNameTv);
@@ -165,10 +195,217 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         locationPlusBtn=(Button) findViewById(R.id.locationPlusBtn);
         locationPlusBtn.bringToFront();
 
+        shareBtn=(Button)findViewById(R.id.shareBtn);
         addressEt = (EditText) findViewById(R.id.addressEt);
+
+        Intent intent=new Intent(this.getIntent());
+        Uri uri=intent.getData();
+        if(uri==null){
+//            Log.i("여기로 들어옴","디비");
+            dataBaseFlag=intent.getIntExtra("dataBaseFlag",0);
+            dataPeople=intent.getIntExtra("dataPeople",0);
+        }else{  //카톡 공유했을 때 이쪽으로 들어옴
+//            Log.i("여기로 들어옴","카톡 공유함");
+            dataBaseFlag=Integer.parseInt(uri.getQueryParameter("dataBaseFlag"));// dataBaseFlag=2
+        }
+
+
+        if(dataBaseFlag==0){
+
+//        Toast.makeText(this, meetingPurposeStr+""+peopleCount, Toast.LENGTH_SHORT).show();    //이전 액티비티에서 목적과 인원수 가져오는지 확인
+            meetingPurposeStr=intent.getStringExtra("meetingPurPose").toString();
+            peopleCount=intent.getIntExtra("peopleCount",0);
+
+        }else{
+            shareBtn.setVisibility(View.VISIBLE);
+
+            if(dataBaseFlag==2){   //카톡 공유로 받았을 때
+                meetingPurposeStr=uri.getQueryParameter("meetingPurposeStr").toString();
+                data_dong=uri.getQueryParameter("data_dong").toString();
+                Log.i("동이름",data_dong);
+                purpose_destination_name=uri.getQueryParameter("purpose_destination_name");
+                Log.i("purpose",purpose_destination_name);
+                final_location_x=Double.parseDouble(uri.getQueryParameter("final_location_x"));
+                final_location_y=Double.parseDouble(uri.getQueryParameter("final_location_y"));;
+                x_middle_location=Double.parseDouble(uri.getQueryParameter("x_middle_location"));
+                y_middle_location=Double.parseDouble(uri.getQueryParameter("y_middle_location"));
+                dataPeople=Integer.parseInt(uri.getQueryParameter("dataPeople"));
+                String share_x_arr=uri.getQueryParameter("x_location");
+                String share_y_arr=uri.getQueryParameter("y_location");
+
+                StringTokenizer stk1=new StringTokenizer(share_x_arr,",");
+                StringTokenizer stk2=new StringTokenizer(share_y_arr,",");
+
+                x_location=new double[dataPeople];
+                y_location=new double[dataPeople];
+
+                for(int i=0;i<dataPeople;i++){
+                    x_location[i]=Double.parseDouble(stk1.nextToken());
+                    y_location[i]=Double.parseDouble(stk2.nextToken());
+                }
+
+            }else if(dataBaseFlag==1){  //기록에서 불러왔을 때
+                meetingPurposeStr=intent.getStringExtra("data_meetingPurposeStr");
+                data_dong=intent.getStringExtra("data_dong");
+                x_location=intent.getDoubleArrayExtra("x_location");
+                y_location=intent.getDoubleArrayExtra("y_location");
+
+                purpose_destination_name=intent.getStringExtra("final_location_name");
+                final_location_x=intent.getDoubleExtra("final_location_x",0);
+                final_location_y=intent.getDoubleExtra("final_location_y",0);
+
+                x_middle_location=intent.getDoubleExtra("x_middle_location",0);
+                y_middle_location=intent.getDoubleExtra("y_middle_location",0);
+            }
+
+            near_position=new LatLng(final_location_x,final_location_y);
+            final_position=new LatLng(x_middle_location,y_middle_location);
+
+            dong=data_dong;
+
+            locationPlusBtn=(Button) findViewById(R.id.locationPlusBtn);
+            locationPlusBtn.setVisibility(View.GONE);
+            markerCount=dataPeople;
+            peopleCount=dataPeople;
+
+            for(int i=0;i<dataPeople;i++){
+//                Log.i("x좌표,y좌표:",x_location[i]+","+y_location[i]);
+                mMap =((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+                mMap.addMarker(new MarkerOptions().position(new LatLng(x_location[i],y_location[i]))).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.people_marker));
+            }
+            mMap.addMarker(new MarkerOptions().position(near_position)).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.middle_purpose_marker));
+
+            PurposeNearSearch purposeNearSearch=new PurposeNearSearch(dong+" "+meetingPurposeStr);
+//                                    Toast.makeText(getApplicationContext(),purposeNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
+//                                    ListView purposeListView=(ListView) findViewById(R.id.purposeListView);
+
+            StringTokenizer stk1=new StringTokenizer(purposeNearSearch.getMiddleAddress().toString(),"\n");
+
+            while(stk1.hasMoreTokens()){
+                StringTokenizer stk2=new StringTokenizer(stk1.nextToken(),"/");
+                while(stk2.hasMoreTokens()){
+                    purposeNearListItems.add(new PurposeNearListItem(stk2.nextToken(),stk2.nextToken(),Double.parseDouble(stk2.nextToken()),Double.parseDouble(stk2.nextToken())));
+                }
+            }
+
+            if(purposeNearListItems.size()!=0) {
+                ArrayList<Integer> distIndex = GetNearPosition.calculMinDist(purposeNearListItems, x_middle_location, y_middle_location);
+
+                purpose_destination_name = purposeNearListItems.get(distIndex.get(0)).getName().toString();
+                purpose_destination_address = purposeNearListItems.get(distIndex.get(0)).getAddress().toString();
+            }
+
+
+        }
+    }
+
+    public void onShareClick(View view){
+        final KakaoLink kakaoLink;
+        try {
+            kakaoLink = KakaoLink.getKakaoLink(getApplicationContext());
+            final KakaoTalkLinkMessageBuilder kakaoTalkLinkMessageBuilder = kakaoLink.createKakaoTalkLinkMessageBuilder();
+
+            try {
+//                captureScreen();
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+
+            int width=300;
+            int height=300;
+
+            Log.i("동아",dong);
+
+            String path="http://postfiles1.naver.net/MjAxNjEyMDJfNTAg/MDAxNDgwNjgzNTU1NDc5.C-Hkd_KjBgRyisPVLbkOUBr-dRsMHi0gOszvXEioXy8g.yRXI9SBHlaqoqS6iaf1SYGlJBOS_StoYkFt7j23oKnUg.JPEG.simjoo0/logo.png?type=w3";
+            kakaoTalkLinkMessageBuilder.addText("지금 Middle로 약속 장소가 공유되었습니다!");
+            kakaoTalkLinkMessageBuilder.addImage(path, width, height);
+            if(dataBaseFlag==0){    // 직접 위치 입력했을때
+
+                String share_x_arr="", share_y_arr="";
+                for(int i=0;i<tempX.size();i++){
+                    if(i==tempX.size()-1){
+                        share_x_arr+=tempX.get(i);
+                        share_y_arr+=tempY.get(i);
+                    }else{
+                        share_x_arr+=tempX.get(i)+",";
+                        share_y_arr+=tempY.get(i)+",";
+                    }
+                }
+
+                MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
+                middleNearStr=middleNearSearch.getMiddleAddress().toString();
+                String[] tempAddress=middleNearStr.split(" ");
+
+                for(int i=0;i<tempAddress.length;i++){
+                    if(tempAddress[i].contains("동")||tempAddress[i].contains("리")||tempAddress[i].contains("읍")||tempAddress[i].contains("면")){
+                        dong=tempAddress[i];
+                    }
+                }
+
+
+                kakaoTalkLinkMessageBuilder.addAppButton("앱으로 이동", new AppActionBuilder().addActionInfo(AppActionInfoBuilder.createAndroidActionInfoBuilder()
+                        .setExecuteParam("meetingPurposeStr="+meetingPurposeStr+"&data_dong="+dong+"&purpose_destination_name="+purpose_destination_name+
+                                "&final_location_x="+near_position.latitude+"&final_location_y="+near_position.longitude+
+                        "&x_middle_location="+final_position.latitude+"&y_middle_location="+final_position.longitude+"&dataPeople="+peopleCount+
+                        "&dataBaseFlag=2&x_location="+share_x_arr+"&y_location="+share_y_arr).build()).build());
+
+            }else{  //데이터베이스에서 값 가져왔을 때
+
+                String share_x_arr="", share_y_arr="";
+                for(int i=0;i<x_location.length;i++){
+                    if(i==x_location.length-1){
+                        share_x_arr+=x_location[i];
+                        share_y_arr+=y_location[i];
+                    }else{
+                        share_x_arr+=x_location[i]+",";
+                        share_y_arr+=y_location[i]+",";
+                    }
+                }
+
+                kakaoTalkLinkMessageBuilder.addAppButton("앱으로 이동", new AppActionBuilder().addActionInfo(AppActionInfoBuilder.createAndroidActionInfoBuilder()
+                        .setExecuteParam("meetingPurposeStr="+meetingPurposeStr+"&data_dong="+data_dong+"&purpose_destination_name="+purpose_destination_name+
+                                "&final_location_x="+final_location_x+"&final_location_y="+final_location_y+
+                                "&x_middle_location="+x_middle_location+"&y_middle_location="+y_middle_location+"&dataPeople="+dataPeople+
+                                "&dataBaseFlag=2&x_location="+share_x_arr+"&y_location="+share_y_arr).build()).build());
+            }
+
+            kakaoLink.sendMessage(kakaoTalkLinkMessageBuilder,this);
+
+            shareBtn.setVisibility(View.GONE);
+
+        } catch (KakaoParameterException e) {
+            e.printStackTrace();
+        }
+
+
+
 
 
     }
+
+
+//    public void captureScreen(){
+//        GoogleMap.SnapshotReadyCallback callback=new GoogleMap.SnapshotReadyCallback() {
+//            Bitmap bitmap;
+//            @Override
+//            public void onSnapshotReady(Bitmap snapshot) {
+//                bitmap=snapshot;
+//                try{
+//                    filename=Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)+"/Camera/MiddleScreen"+System.currentTimeMillis()+".png";
+//                    FileOutputStream out =new FileOutputStream(filename);
+//                    bitmap.compress(Bitmap.CompressFormat.PNG,100,out);
+//                    out.flush();
+//                    out.close();
+//                }catch(Exception e){
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+//        mMap.snapshot(callback);
+//    }
+
 
 
     @Override
@@ -290,7 +527,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                                    Toast.makeText(getApplicationContext(),middleNearSearch.getMiddleAddress(),Toast.LENGTH_SHORT).show();
                                     middleNearStr=middleNearSearch.getMiddleAddress().toString();
 //                                    Toast.makeText(getApplicationContext(),middleNearStr,Toast.LENGTH_SHORT).show();
-                                    String dong="";
+                                    dong="";
 
                                     String[] tempAddress=middleNearStr.split(" ");
 
@@ -349,6 +586,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                                             tmpLatOri = new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng);
                                         }
+
+                                        shareBtn.setVisibility(View.VISIBLE);
 
                                     }else{
                                         Toast.makeText(getApplicationContext(), "중간 위치에서 가장 가까운 곳이 없습니다.", Toast.LENGTH_SHORT).show();
@@ -591,6 +830,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                                 tmpLatOri = new LatLng(tmpLatOri.latitude + divLat, tmpLatOri.longitude + divLng);
                                             }
 
+                                            shareBtn.setVisibility(View.VISIBLE);
+
                                         }else{
                                             Toast.makeText(getApplicationContext(), "중간 위치에서 가장 가까운 곳이 없습니다.", Toast.LENGTH_SHORT).show();
                                         }
@@ -757,8 +998,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             @Override
                             protected void onClickConfirmed(View v, Marker marker) {
                                 // Here we can perform some action triggered after clicking the button
-                                Toast.makeText(MapsActivity.this, "저장버튼 클릭", Toast.LENGTH_SHORT).show();
+//                                Toast.makeText(MapsActivity.this, "저장버튼 클릭", Toast.LENGTH_SHORT).show();
                                 marker.hideInfoWindow();
+
+                                //사용자들이 입력한 좌표들을 스트링에 넣는 작업
+                                String people_address="";
+                                for(int i=0;i<peopleCount;i++){
+                                    people_address+=tempX.get(i)+"/"+tempY.get(i)+",";
+                                }
+
+                                MiddleNearSearch middleNearSearch=new MiddleNearSearch(resultList.get(0),resultList.get(1));
+                                middleNearStr=middleNearSearch.getMiddleAddress().toString();
+                                String[] tempAddress=middleNearStr.split(" ");
+
+                                for(int i=0;i<tempAddress.length;i++){
+                                    if(tempAddress[i].contains("동")||tempAddress[i].contains("리")||tempAddress[i].contains("읍")||tempAddress[i].contains("면")){
+                                        dong=tempAddress[i];
+                                    }
+                                }
+
+                                MySQLiteHandler handler=new MySQLiteHandler(getApplicationContext());
+                                handler.insert(people_address,dong+","+purpose_destination_name+","+near_position.latitude+"/"+near_position.longitude, peopleCount,meetingPurposeStr+","+resultList.get(0)+"/"+resultList.get(1));
+                                handler.close();
+
+//                                handler.delete("카페");
+                                Toast.makeText(getApplicationContext(), "저장되었습니다.", Toast.LENGTH_SHORT).show();
+
                             }
                         };
                         nearInfoBtn.setOnTouchListener(infoButtonListener1);
@@ -857,6 +1122,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         resultList.clear();
         tempX.clear();
         tempY.clear();
+        shareBtn.setVisibility(View.GONE);
+        purposeNearListItems.clear();
     }
 
     public static int getPixelsFromDp(Context context, float dp) {
@@ -992,7 +1259,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     TextView vehicle_name_Tv=new TextView(MapsActivity.this);
                     vehicle_name_Tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                     vehicle_name_Tv.setTextSize(15);
-                    vehicle_name_Tv.setText("번 "+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("line").getJSONObject("vehicle").getString("name"));
+                    vehicle_name_Tv.setText(" "+jsonSteps.getJSONObject(k).getJSONObject("transit_details").getJSONObject("line").getJSONObject("vehicle").getString("name"));
 
                     transitHeadLinear.addView(short_nameTv);
                     transitHeadLinear.addView(vehicle_name_Tv);
